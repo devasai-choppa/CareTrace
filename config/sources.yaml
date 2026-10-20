@@ -1,37 +1,39 @@
-# Hospital website_root values are placeholders.
-# Verify cms-hpt.txt at each site root before filling website_root.
-# https://<hospital-site>/cms-hpt.txt is the CMS-required index file.
+# website_root is the host of a cms-hpt.txt confirmed as a CMS key/value
+# index on 2026-10-20. System files also name sibling hospitals; discovery
+# keeps the location-name that matches this hospital. mrf_url_override stays
+# empty while that index exists. The MRF URLs themselves are large and are
+# not downloaded by filling this file.
 
 hospitals:
   - source_id: mgh
     name: Massachusetts General Hospital
     city: Boston
     state: MA
-    website_root: ""  # verify cms-hpt.txt at site root
+    website_root: https://www.massgeneralbrigham.org
     mrf_url_override: null
   - source_id: bwh
     name: Brigham and Women's Hospital
     city: Boston
     state: MA
-    website_root: ""  # verify cms-hpt.txt at site root
+    website_root: https://www.massgeneralbrigham.org
     mrf_url_override: null
   - source_id: bidmc
     name: Beth Israel Deaconess Medical Center
     city: Boston
     state: MA
-    website_root: ""  # verify cms-hpt.txt at site root
+    website_root: https://www.bidmc.org
     mrf_url_override: null
   - source_id: tufts
     name: Tufts Medical Center
     city: Boston
     state: MA
-    website_root: ""  # verify cms-hpt.txt at site root
+    website_root: https://www.tuftsmedicine.org
     mrf_url_override: null
   - source_id: bmc
     name: Boston Medical Center
     city: Boston
     state: MA
-    website_root: ""  # verify cms-hpt.txt at site root
+    website_root: https://www.bmc.org
     mrf_url_override: null
 
 payers:

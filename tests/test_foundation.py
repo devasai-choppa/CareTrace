@@ -16,6 +16,15 @@ def test_registry_loads() -> None:
     assert len(registry.hospitals) == 5
     assert len(registry.payers) == 3
     assert registry.payer("bcbsma") is not None
+    roots = {item.source_id: item.website_root for item in registry.hospitals}
+    assert roots == {
+        "mgh": "https://www.massgeneralbrigham.org",
+        "bwh": "https://www.massgeneralbrigham.org",
+        "bidmc": "https://www.bidmc.org",
+        "tufts": "https://www.tuftsmedicine.org",
+        "bmc": "https://www.bmc.org",
+    }
+    assert all(item.mrf_url_override is None for item in registry.hospitals)
 
 
 def test_registry_rejects_bad_yaml(tmp_path: Path) -> None:

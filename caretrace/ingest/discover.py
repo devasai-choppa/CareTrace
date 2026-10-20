@@ -26,6 +26,27 @@ CREATE TABLE IF NOT EXISTS mrf_index (
 """
 
 
+def _normalize_location(name: str) -> str:
+    folded = name.replace("\u2019", "'").replace("\u2018", "'").replace("`", "'")
+    return " ".join(folded.casefold().split())
+
+
+def select_location_blocks(
+    blocks: list[dict[str, str]], hospital_name: str
+) -> list[dict[str, str]]:
+    """Keep blocks whose location-name matches this hospital.
+
+    A system ``cms-hpt.txt`` lists sibling hospitals. An exact normalized
+    match keeps only this hospital. When nothing matches, every block is
+    kept so a single-site index with a different location label still works.
+    """
+    wanted = _normalize_location(hospital_name)
+    matched = [
+        block for block in blocks if _normalize_location(block.get("location-name", "")) == wanted
+    ]
+    return matched or list(blocks)
+
+
 def parse_cms_hpt(text: str) -> list[dict[str, str]]:
     """Parse a cms-hpt.txt body into location blocks.
 
@@ -101,7 +122,8 @@ def discover_hospital(
                 log.warning("cms_hpt_missing", source_id=hospital.source_id, url=url)
             else:
                 response.raise_for_status()
-                for block in parse_cms_hpt(response.text):
+                blocks = select_location_blocks(parse_cms_hpt(response.text), hospital.name)
+                for block in blocks:
                     block["source_id"] = hospital.source_id
                     if block.get("mrf-url"):
                         rows.append(block)

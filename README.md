@@ -260,7 +260,7 @@ scripts/       Synthea notes, code-ref fetch, BI export, ghost injection
 
 ## Data, limits, ethics
 
-Sources and the empty `website_root` fields are described in `docs/DATA_SOURCES.md`.
+Sources, including the verified `cms-hpt.txt` hosts, are described in `docs/DATA_SOURCES.md`.
 
 Limits: five sample hospitals, three payers, one imaging policy, and synthetic bills. Unbundling pairs are illustrative, not the CMS National Correct Coding Initiative table. Directory data is a mock, with an NPPES client that is unused until you call it. Conformal coverage was measured on a simulated price process.
 
@@ -270,7 +270,7 @@ Do not upload a real EOB. Demo mode rejects Social Security number patterns. See
 
 ## Roadmap
 
-Fill `website_root` after checking each hospital's `cms-hpt.txt`. Swap the mock model for Groq when you want a live narrative. Point dbt at Snowflake or Databricks with the extra profiles. Replace the lexical entailment check with a cross-encoder if you need graded faithfulness.
+Run `caretrace discover`, then `caretrace download --max-gb` if you want a live machine-readable file. Swap the mock model for Groq when you want a live narrative. Point dbt at Snowflake or Databricks with the extra profiles. Replace the lexical entailment check with a cross-encoder if you need graded faithfulness.
 
 ## Interview talking points
 

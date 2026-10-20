@@ -6,7 +6,7 @@ from pathlib import Path
 
 import httpx
 import respx
-from caretrace.ingest.discover import discover, parse_cms_hpt
+from caretrace.ingest.discover import discover, parse_cms_hpt, select_location_blocks
 from caretrace.ingest.download import HostRateLimiter, download_one
 from caretrace.ingest.manifest import get_file
 from caretrace.ingest.registry import HospitalSource, SourceRegistry
@@ -30,6 +30,24 @@ def test_parse_multi_location() -> None:
     blocks = parse_cms_hpt(HPT)
     assert len(blocks) == 2
     assert blocks[1]["mrf-url"].endswith("satellite.csv")
+
+
+def test_select_location_keeps_named_hospital() -> None:
+    blocks = parse_cms_hpt(HPT)
+    kept = select_location_blocks(blocks, "Satellite")
+    assert [block["location-name"] for block in kept] == ["Satellite"]
+    assert len(select_location_blocks(blocks, "Unlisted")) == 2
+
+
+def test_select_location_folds_apostrophe() -> None:
+    blocks = [
+        {
+            "location-name": "Brigham and Women\u2019s Hospital",
+            "mrf-url": "https://example.invalid/bwh.zip",
+        }
+    ]
+    kept = select_location_blocks(blocks, "Brigham and Women's Hospital")
+    assert kept == blocks
 
 
 def test_parse_rejects_html() -> None:
@@ -58,6 +76,21 @@ def test_discover_writes_index(settings) -> None:
     )
     rows = discover(registry, settings=settings)
     assert len(rows) == 2
+    named = SourceRegistry(
+        hospitals=[
+            HospitalSource(
+                source_id="sat",
+                name="Satellite",
+                city="Boston",
+                state="MA",
+                website_root="https://hospital.example",
+            )
+        ],
+        payers=[],
+    )
+    matched = discover(named, settings=settings)
+    assert len(matched) == 1
+    assert matched[0]["mrf-url"].endswith("satellite.csv")
 
 
 @respx.mock
