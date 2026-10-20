@@ -94,6 +94,24 @@ def test_discover_writes_index(settings) -> None:
 
 
 @respx.mock
+@respx.mock
+def test_download_rejects_over_cap(settings) -> None:
+    respx.get("https://files.example/big.zip").mock(
+        return_value=httpx.Response(200, content=b"x" * 1000, headers={"content-length": "1000"})
+    )
+    result = download_one(
+        "mgh",
+        "https://files.example/big.zip",
+        settings=settings,
+        client=httpx.Client(),
+        limiter=HostRateLimiter(0),
+        max_bytes=10,
+    )
+    assert result["error"] == "max_bytes"
+    assert list((settings.raw_dir / "mgh").glob("*")) == []
+
+
+@respx.mock
 def test_download_zip_and_skip(settings) -> None:
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:

@@ -44,7 +44,7 @@ def discover_command(source_id: str | None = None) -> None:
 
 @app.command("download")
 def download_command(source_id: str | None = None, max_gb: float | None = None) -> None:
-    """Stream MRF downloads. Skips a file when the sha256 is unchanged."""
+    """Stream MRF downloads. --max-gb stops a file before its body is saved."""
     rows = download(source_id=source_id, max_gb=max_gb, limiter=HostRateLimiter(1.0))
     console.print(f"download attempts: {len(rows)}")
 

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from caretrace.parse.preamble import cms_csv_preamble
+
 
 def detect_format(path: Path) -> str:
     """Return json_v2, csv_tall, csv_wide, legacy, or unknown from the header bytes."""
@@ -16,20 +18,23 @@ def detect_format(path: Path) -> str:
         if "standard_charge_information" in text:
             return "json_v2"
         return "legacy"
-    first = text.splitlines()[0]
-    lower = first.lower()
-    if _is_wide(lower):
+    _meta, _skip, fields = cms_csv_preamble(path)
+    if _is_wide(fields):
         return "csv_wide"
-    if "payer_name" in lower or "code|1" in lower or "negotiated_dollar" in lower:
+    lower = [field.lower() for field in fields]
+    if any(name in lower for name in ("payer_name", "code|1", "negotiated_dollar")):
         return "csv_tall"
-    if "," in first:
+    joined = ",".join(fields).lower()
+    if "negotiated_dollar" in joined or "code|1" in joined:
+        return "csv_tall"
+    if len(fields) > 1:
         return "csv_tall"
     return "unknown"
 
 
-def _is_wide(header: str) -> bool:
-    for column in header.split(","):
-        name = column.strip().strip('"')
-        if name.startswith("standard_charge|") and name.count("|") >= 3:
+def _is_wide(fields: list[str]) -> bool:
+    for name in fields:
+        column = name.strip().strip('"')
+        if column.startswith("standard_charge|") and column.count("|") >= 3:
             return True
     return False

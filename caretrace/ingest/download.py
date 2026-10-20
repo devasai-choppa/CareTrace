@@ -18,6 +18,15 @@ from caretrace.logging import get_logger
 
 log = get_logger("download")
 
+
+class FileTooLarge(Exception):
+    """The remote file is larger than the caller's byte cap."""
+
+    def __init__(self, size: int) -> None:
+        self.size = size
+        super().__init__(f"file is {size} bytes")
+
+
 INDEX_SQL = """
 SELECT source_id, location_name, mrf_url
 FROM mrf_index
@@ -68,6 +77,7 @@ def _stream_once(
     uri: str,
     dest: Path,
     limiter: HostRateLimiter,
+    max_bytes: int | None = None,
 ) -> tuple[str, int]:
     """Download uri to dest. Resume with Range when a partial file exists."""
     host = httpx.URL(uri).host or "local"
@@ -100,8 +110,16 @@ def _stream_once(
                 hasher = hashlib.sha256()
                 size = 0
                 partial.unlink(missing_ok=True)
+            declared = response.headers.get("content-length")
+            if max_bytes is not None and declared is not None and declared.isdigit():
+                incoming = int(declared)
+                total = size + incoming if response.status_code == 206 else incoming
+                if total > max_bytes:
+                    raise FileTooLarge(total)
             with partial.open(mode) as handle:
                 for chunk in response.iter_bytes():
+                    if max_bytes is not None and size + len(chunk) > max_bytes:
+                        raise FileTooLarge(size + len(chunk))
                     handle.write(chunk)
                     hasher.update(chunk)
                     size += len(chunk)
@@ -153,13 +171,22 @@ def download_one(
             if unchanged(fid, digest, cfg):
                 log.info("download_skipped", file_id=fid, source_id=source_id)
                 return {"file_id": fid, "path": str(dest), "skipped": True, "sha256": digest}
-        digest, size = _stream_once(http, uri, dest, gate)
-        if max_bytes is not None and size > max_bytes:
+        try:
+            digest, size = _stream_once(http, uri, dest, gate, max_bytes)
+        except FileTooLarge as exc:
             dest.unlink(missing_ok=True)
+            dest.with_suffix(dest.suffix + ".part").unlink(missing_ok=True)
             record_download(
-                fid, source_id, uri, digest, size, status="error", error="max_bytes", settings=cfg
+                fid,
+                source_id,
+                uri,
+                "",
+                exc.size,
+                status="error",
+                error="max_bytes",
+                settings=cfg,
             )
-            return {"file_id": fid, "skipped": False, "error": "max_bytes"}
+            return {"file_id": fid, "skipped": False, "error": "max_bytes", "bytes": exc.size}
         if unchanged(fid, digest, cfg):
             return {"file_id": fid, "path": str(dest), "skipped": True, "sha256": digest}
         produced = _materialize(dest, cfg.raw_dir / source_id)
@@ -213,7 +240,7 @@ def download(
     client: httpx.Client | None = None,
     limiter: HostRateLimiter | None = None,
 ) -> list[dict[str, object]]:
-    """Download every indexed MRF, optionally capped by source and total bytes."""
+    """Download every indexed MRF. max_gb caps each file, not the batch."""
     cfg = settings or get_settings()
     max_bytes = int(max_gb * (1024**3)) if max_gb is not None else None
     results = []

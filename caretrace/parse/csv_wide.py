@@ -15,7 +15,8 @@ from caretrace.parse.common import (
     stamp_row,
     validate_row,
 )
-from caretrace.parse.csv_tall import COLUMN_MAP, MONEY, _text
+from caretrace.parse.csv_tall import COLUMN_MAP, MONEY, _apply_preamble, _text, code_pairs
+from caretrace.parse.preamble import cms_csv_preamble
 
 WIDE_COL = re.compile(
     r"^standard_charge\|(?P<payer>[^|]+)\|(?P<plan>[^|]+)\|(?P<field>[a-z0-9_]+)$",
@@ -34,25 +35,32 @@ def iter_rows(
 ) -> Iterator[tuple[dict[str, object], str | None]]:
     """Yield one bronze row per wide payer/plan field group."""
     del source_file_uri
-    frame_iter = pl.scan_csv(path, infer_schema=False).collect_batches(
-        chunk_size=batch_size, engine="streaming"
-    )
+    meta, skip, _header = cms_csv_preamble(path)
+    frame_iter = pl.scan_csv(
+        path, infer_schema=False, skip_rows=skip, encoding="utf8-lossy"
+    ).collect_batches(chunk_size=batch_size, engine="streaming")
     for frame in frame_iter:
         groups = _payer_groups(frame.columns)
         for record in frame.iter_rows(named=True):
             base = _base(record, frame.columns)
-            if not groups:
-                yield _emit(base, {}, source_id, file_id, hospital_name)
-                continue
-            for (payer, plan), fields in groups.items():
+            pairs = code_pairs(record, frame.columns)
+            targets: list[tuple[tuple[str, str], dict[str, str]]] = (
+                list(groups.items()) if groups else [(("", ""), {})]
+            )
+            for (payer, plan), fields in targets:
                 payer_fields = {field: record.get(column) for field, column in fields.items()}
-                yield _emit(
-                    base,
-                    {"payer": payer, "plan": plan, **payer_fields},
-                    source_id,
-                    file_id,
-                    hospital_name,
-                )
+                for code, code_type in pairs:
+                    coded = dict(base)
+                    coded["code"] = code
+                    coded["code_type"] = code_type
+                    yield _emit(
+                        coded,
+                        {"payer": payer, "plan": plan, **payer_fields},
+                        source_id,
+                        file_id,
+                        hospital_name,
+                        meta,
+                    )
 
 
 def _payer_groups(columns: list[str]) -> dict[tuple[str, str], dict[str, str]]:
@@ -82,6 +90,7 @@ def _emit(
     source_id: str,
     file_id: str,
     hospital_name: str | None,
+    meta: dict[str, str] | None = None,
 ) -> tuple[dict[str, object], str | None]:
     row: dict[str, object] = {
         "source_id": source_id,
@@ -103,4 +112,5 @@ def _emit(
     for field in MONEY:
         source = payer.get(field, base.get(field))
         row[field] = parse_money(source)
+    _apply_preamble(row, meta or {}, hospital_name)
     return stamp_row(row), validate_row(row)

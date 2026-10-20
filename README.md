@@ -270,7 +270,7 @@ Do not upload a real EOB. Demo mode rejects Social Security number patterns. See
 
 ## Roadmap
 
-Run `caretrace discover`, then `caretrace download --max-gb` if you want a live machine-readable file. Swap the mock model for Groq when you want a live narrative. Point dbt at Snowflake or Databricks with the extra profiles. Replace the lexical entailment check with a cross-encoder if you need graded faithfulness.
+Mass General and Brigham CSV files are parsed; see `docs/DATA_SOURCES.md`. Tufts, Boston Medical Center, and Beth Israel are still behind `caretrace download --max-gb`. Swap the mock model for Groq when you want a live narrative. Point dbt at Snowflake or Databricks with the extra profiles. Replace the lexical entailment check with a cross-encoder if you need graded faithfulness.
 
 ## Interview talking points
 

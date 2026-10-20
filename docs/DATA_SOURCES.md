@@ -25,7 +25,20 @@ A live `caretrace discover` on 2026-10-20 stored one file per hospital:
 | tufts | `https://www.tuftsmedicine.org/sites/default/files/2026-03/043400617_tuftsmedicalcenter_standardcharges.csv.zip` |
 | bmc | `https://www.bmchealthsystem.org/wp-content/uploads/043314093_BostonMedicalCenter_standardcharges.csv.zip` |
 
-These files are large and are not committed. `caretrace download --max-gb` is the cap if you fetch one.
+`caretrace download --max-gb` stops a file when its `Content-Length` is over the cap, before the body is saved.
+
+The two smallest indexes were downloaded and parsed on 2026-10-20. Both are CMS CSV template 3.0.0, last updated 2026-03-27. A hospital-info block sits above the charge header, and the CPT is often `code|2` next to a local CDM in `code|1`. The parser skips that block and writes one bronze row per code.
+
+| source_id | Zip | Charge CSV | Bronze rows | Quarantined | Payers |
+| --- | --- | --- | --- | --- | --- |
+| mgh | 3.6 MB | 63 MB | 463,953 | 0 | 35 |
+| bwh | 2.7 MB | 46 MB | 314,673 | 0 | 33 |
+
+Brigham and Women's outpatient CPT `73721` for `BLUE CROSS BLUE SHIELD [110001]` / `HB AMC BLUE CROSS HMO` is $966.58 (gross $3,332.00, discounted cash $2,499.00). Row hash `b9658f4f847a3dd1e7d12fb00cb94bc029fb4aeac7c8c4046799b3a1b9bdc3ab`. The Mass General file has no Blue Cross dollar for that code; its Harvard Pilgrim PPO dollar is $230.56. These are published charges, not patient quotes, and they are not the synthetic sample rates.
+
+The zip and CSV stay in gitignored `data/raw/`. The verification parse wrote bronze under a scratch directory so `load-samples` and dbt still build the five-hospital demo. Parsing the same files into `data/bronze/` would mix them into the next mart rebuild.
+
+Tufts (~169 MB zip), Boston Medical Center (~41 MB zip), and Beth Israel (~27 MB JSON) were not downloaded.
 
 The committed samples in `data/samples/` follow the CMS template v2 shape: one JSON file, one tall CSV, and one wide CSV, plus two more JSON files so all five hospitals have a knee MRI row. They are not the hospitals' real MRFs.
 
