@@ -1,0 +1,29 @@
+name: caretrace
+version: "1.0.0"
+config-version: 2
+profile: caretrace
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  expected_payers: 3
+
+models:
+  caretrace:
+    +materialized: view
+    staging:
+      +materialized: view
+      +schema: staging
+    silver:
+      +materialized: table
+      +schema: silver
+    gold:
+      +materialized: table
+      +schema: analytics
+    omop:
+      +materialized: view
+      +schema: omop

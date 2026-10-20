@@ -1,0 +1,32 @@
+version: 2
+
+exposures:
+  - name: boston_price_variance
+    type: dashboard
+    maturity: medium
+    description: Boston price variance by service for Tableau or Power BI.
+    depends_on:
+      - ref('mart_price_variance')
+      - ref('mart_negotiated_rates')
+    owner:
+      name: CareTrace
+      email: demo@caretrace.local
+  - name: hospital_transparency_scorecard
+    type: dashboard
+    maturity: medium
+    description: Hospital transparency scorecard.
+    depends_on:
+      - ref('mart_hospital_compliance')
+    owner:
+      name: CareTrace
+      email: demo@caretrace.local
+  - name: payer_coverage_ghost_risk
+    type: dashboard
+    maturity: medium
+    description: Payer coverage and directory ghost risk.
+    depends_on:
+      - ref('mart_directory_trust')
+      - ref('mart_negotiated_rates')
+    owner:
+      name: CareTrace
+      email: demo@caretrace.local

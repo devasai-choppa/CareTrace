@@ -1,0 +1,139 @@
+{
+  "hospital_name": "Massachusetts General Hospital",
+  "last_updated_on": "2026-06-15",
+  "version": "2.0.0",
+  "standard_charge_information": [
+    {
+      "description": "Knee MRI",
+      "code_information": [{"code": "73721", "type": "CPT"}],
+      "standard_charges": [
+        {
+          "setting": "outpatient",
+          "billing_class": "hospital",
+          "gross_charge": 3200.0,
+          "discounted_cash": "$900.00",
+          "minimum": 980.0,
+          "maximum": 1750.0,
+          "payers_information": [
+            {
+              "payer_name": "Blue Cross and Blue Shield of Massachusetts, Inc.",
+              "plan_name": "HMO Blue",
+              "standard_charge_dollar": 1400.0,
+              "methodology": "case rate"
+            },
+            {
+              "payer_name": "Harvard Pilgrim Health Care",
+              "plan_name": "HMO",
+              "standard_charge_dollar": 1500.0,
+              "methodology": "case rate"
+            },
+            {
+              "payer_name": "Tufts Health Plan",
+              "plan_name": "PPO",
+              "standard_charge_dollar": 1350.0,
+              "methodology": "case rate"
+            },
+            {
+              "payer_name": "Acme Mystery Plan",
+              "plan_name": "PPO",
+              "standard_charge_percentage": 45,
+              "methodology": "percent of charge"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Established visit low",
+      "code_information": [{"code": "99213", "type": "CPT"}],
+      "standard_charges": [
+        {
+          "setting": "outpatient",
+          "billing_class": "professional",
+          "gross_charge": 300.0,
+          "discounted_cash": 120.0,
+          "payers_information": [
+            {
+              "payer_name": "BCBS Massachusetts",
+              "plan_name": "HMO Blue",
+              "standard_charge_dollar": 180.0,
+              "methodology": "fee schedule"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Comprehensive blood chemistry panel",
+      "code_information": [{"code": "80053", "type": "CPT"}],
+      "standard_charges": [
+        {
+          "setting": "outpatient",
+          "billing_class": "hospital",
+          "gross_charge": 220.0,
+          "discounted_cash": 40.0,
+          "payers_information": [
+            {
+              "payer_name": "Blue Cross Blue Shield of MA",
+              "plan_name": "HMO Blue",
+              "standard_charge_dollar": 55.0,
+              "methodology": "fee schedule"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Established visit high",
+      "code_information": [{"code": "99215", "type": "CPT"}],
+      "standard_charges": [
+        {
+          "setting": "outpatient",
+          "billing_class": "professional",
+          "gross_charge": 450.0,
+          "discounted_cash": 200.0,
+          "payers_information": [
+            {
+              "payer_name": "Blue Cross Blue Shield of Massachusetts",
+              "plan_name": "HMO Blue",
+              "standard_charge_dollar": 260.0,
+              "methodology": "fee schedule"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Total knee replacement",
+      "code_information": [{"code": "27447", "type": "CPT"}],
+      "standard_charges": [
+        {
+          "setting": "inpatient",
+          "billing_class": "hospital",
+          "gross_charge": 48000.0,
+          "discounted_cash": 12000.0,
+          "payers_information": [
+            {
+              "payer_name": "Harvard Pilgrim Health Care",
+              "plan_name": "HMO",
+              "standard_charge_algorithm": "per diem from contract exhibit B",
+              "methodology": "algorithm"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Row missing a code",
+      "code_information": [{"code": "", "type": "CPT"}],
+      "standard_charges": [
+        {
+          "setting": "outpatient",
+          "gross_charge": 10,
+          "discounted_cash": 5,
+          "payers_information": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: mart_negotiated_rates
+    description: >
+      Grain is hospital x code x setting x payer x plan.
+      quality_score starts at 1 and subtracts 0.35 when no dollar is published,
+      0.15 for percent-only, 0.25 for algorithm-only, and 0.25 for a peer outlier.
+    columns:
+      - name: source_id
+        description: Hospital that published the rate.
+        tests: [not_null]
+      - name: code
+        description: Billing code.
+        tests: [not_null]
+      - name: rate_dollar
+        description: Negotiated dollar amount. Null when the file published only a percent or algorithm.
+      - name: rate_kind
+        description: dollar, percent, algorithm, or missing.
+      - name: source_row_hash
+        description: Lineage hash back to the bronze row.
+        tests: [not_null]
+      - name: quality_score
+        description: 0-1 score used as confidence for a published rate.
+  - name: mart_price_variance
+    description: Distribution of negotiated dollar rates for a code and payer across hospitals.
+    columns:
+      - name: min_rate
+        description: Lowest published dollar rate.
+      - name: p25
+        description: 25th percentile.
+      - name: median_rate
+        description: Median published dollar rate.
+      - name: p75
+        description: 75th percentile.
+      - name: max_rate
+        description: Highest published dollar rate.
+      - name: spread_ratio
+        description: max divided by min.
+      - name: n_hospitals
+        description: Hospitals contributing a dollar rate.
+  - name: mart_hospital_compliance
+    description: >
+      transparency_score = 0.40 freshness + 0.30 dollar-rate share
+      + 0.20 payer coverage + 0.10 (1 - quarantine share).
+      Freshness is 1 through 365 days and falls linearly to 0 at 730 days.
+    columns:
+      - name: file_age_days
+        description: Days since last_updated_on.
+      - name: pct_dollar_rates
+        description: Share of negotiated rows with a dollar amount.
+      - name: payer_coverage
+        description: Resolved payers divided by payers in the registry, capped at 1.
+      - name: quarantine_pct
+        description: Share of parsed rows quarantined for this hospital.
+      - name: transparency_score
+        description: Weighted transparency score documented on the model.
+  - name: mart_directory_trust
+    description: One trust score per payer and provider.
+    columns:
+      - name: directory_confidence
+        description: 0-1 trust score. Below 0.5 is ghost risk.
+      - name: ghost_risk
+        description: True when directory confidence is below 0.5.

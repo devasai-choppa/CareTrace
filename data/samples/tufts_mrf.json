@@ -1,0 +1,47 @@
+{
+  "hospital_name": "Tufts Medical Center",
+  "last_updated_on": "2026-05-01",
+  "version": "2.0.0",
+  "standard_charge_information": [
+    {
+      "description": "Knee MRI",
+      "code_information": [{"code": "73721", "type": "CPT"}],
+      "standard_charges": [
+        {
+          "setting": "outpatient",
+          "billing_class": "hospital",
+          "gross_charge": 3000,
+          "discounted_cash": 800,
+          "payers_information": [
+            {
+              "payer_name": "Blue Cross MA",
+              "plan_name": "HMO Blue",
+              "standard_charge_dollar": 1250,
+              "methodology": "case rate"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Established visit low",
+      "code_information": [{"code": "99213", "type": "CPT"}],
+      "standard_charges": [
+        {
+          "setting": "outpatient",
+          "billing_class": "professional",
+          "gross_charge": 290,
+          "discounted_cash": 95,
+          "payers_information": [
+            {
+              "payer_name": "Tufts Health Plan",
+              "plan_name": "PPO",
+              "standard_charge_dollar": 150,
+              "methodology": "fee schedule"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

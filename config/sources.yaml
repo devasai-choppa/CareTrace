@@ -1,0 +1,66 @@
+# Hospital website_root values are placeholders.
+# Verify cms-hpt.txt at each site root before filling website_root.
+# https://<hospital-site>/cms-hpt.txt is the CMS-required index file.
+
+hospitals:
+  - source_id: mgh
+    name: Massachusetts General Hospital
+    city: Boston
+    state: MA
+    website_root: ""  # verify cms-hpt.txt at site root
+    mrf_url_override: null
+  - source_id: bwh
+    name: Brigham and Women's Hospital
+    city: Boston
+    state: MA
+    website_root: ""  # verify cms-hpt.txt at site root
+    mrf_url_override: null
+  - source_id: bidmc
+    name: Beth Israel Deaconess Medical Center
+    city: Boston
+    state: MA
+    website_root: ""  # verify cms-hpt.txt at site root
+    mrf_url_override: null
+  - source_id: tufts
+    name: Tufts Medical Center
+    city: Boston
+    state: MA
+    website_root: ""  # verify cms-hpt.txt at site root
+    mrf_url_override: null
+  - source_id: bmc
+    name: Boston Medical Center
+    city: Boston
+    state: MA
+    website_root: ""  # verify cms-hpt.txt at site root
+    mrf_url_override: null
+
+payers:
+  - payer_id: bcbsma
+    canonical_name: Blue Cross Blue Shield of Massachusetts
+    aliases:
+      - BCBSMA
+      - BCBS Massachusetts
+      - Blue Cross Blue Shield of MA
+      - Blue Cross and Blue Shield of Massachusetts
+      - Blue Cross MA
+    policy_urls:
+      - https://example.invalid/policies/bcbsma-advanced-imaging
+    provider_directory_api: null
+  - payer_id: harvard-pilgrim
+    canonical_name: Harvard Pilgrim Health Care
+    aliases:
+      - HPHC
+      - Harvard Pilgrim
+      - Harvard Pilgrim Health Plan
+    policy_urls:
+      - https://example.invalid/policies/hphc-prior-auth
+    provider_directory_api: null
+  - payer_id: tufts-health
+    canonical_name: Tufts Health Plan
+    aliases:
+      - Tufts Health
+      - Tufts Health Plan PPO
+      - Point32Health Tufts
+    policy_urls:
+      - https://example.invalid/policies/tufts-prior-auth
+    provider_directory_api: null

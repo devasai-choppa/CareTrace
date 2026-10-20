@@ -1,0 +1,40 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      LLM_PROVIDER: mock
+      DEMO_MODE: "true"
+      DATA_DIR: /app/data
+      DUCKDB_PATH: /app/data/caretrace.duckdb
+      CARETRACE_API_URL: http://api:8000
+    volumes:
+      - caretrace-data:/app/data
+    command: >
+      sh -c "caretrace load-samples &&
+             uvicorn caretrace.api.main:app --host 0.0.0.0 --port 8000"
+
+  ui:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      CARETRACE_API_URL: http://api:8000
+      LLM_PROVIDER: mock
+      DEMO_MODE: "true"
+    depends_on:
+      - api
+    command: >
+      streamlit run ui/app.py --server.port 8501 --server.address 0.0.0.0
+
+  chroma:
+    image: chromadb/chroma:0.5.23
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+
+volumes:
+  caretrace-data:
+  chroma-data:

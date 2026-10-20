@@ -1,0 +1,4 @@
+description,code|1,code|1|type,setting,billing_class,standard_charge|gross,standard_charge|discounted_cash,standard_charge|min,standard_charge|max,hospital_name,last_updated_on,standard_charge|Blue Cross Blue Shield of Massachusetts|HMO Blue|negotiated_dollar,standard_charge|Harvard Pilgrim Health Care|HMO|negotiated_dollar,standard_charge|Tufts Health Plan|PPO|negotiated_percentage
+Knee MRI,73721,CPT,outpatient,hospital,3500.00,1000.00,980,1750,Beth Israel Deaconess Medical Center,2026-06-15,1750.00,1600.00,40
+Established visit low,99213,CPT,outpatient,professional,320.00,110.00,,,Beth Israel Deaconess Medical Center,2026-06-15,190.00,185.00,
+Comprehensive blood chemistry panel,80053,CPT,outpatient,hospital,240.00,45.00,,,Beth Israel Deaconess Medical Center,2026-06-15,60.00,,

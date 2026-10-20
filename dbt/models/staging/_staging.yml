@@ -1,0 +1,113 @@
+version: 2
+
+models:
+  - name: stg_standard_charges
+    description: Typed, trimmed, deduplicated bronze charge rows.
+    tests:
+      - gross_gte_discounted_cash:
+          config:
+            severity: warn
+    columns:
+      - name: source_id
+        description: Hospital publisher id from the source registry.
+        tests: [not_null]
+      - name: file_id
+        description: Stable id of the downloaded machine-readable file.
+        tests: [not_null]
+      - name: hospital_name
+        description: Hospital name as published in the MRF header or sample registry.
+      - name: last_updated_on
+        description: File update date published by the hospital.
+      - name: version
+        description: MRF template version or parser format label.
+      - name: description
+        description: Hospital text label. Not an AMA CPT descriptor.
+      - name: code
+        description: Billing code. CPT codes are stored without AMA descriptor text.
+        tests: [not_null]
+      - name: code_type
+        description: Normalized code system.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["CPT", "HCPCS", "MS-DRG", "APR-DRG", "RC", "NDC", "LOCAL", "OTHER"]
+      - name: setting
+        description: Care setting the charge applies to.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["inpatient", "outpatient", "both"]
+      - name: billing_class
+        description: Hospital or professional billing class when the file provides one.
+      - name: gross_charge
+        description: Gross charge before any discount.
+        tests: [non_negative]
+      - name: discounted_cash
+        description: Discounted cash price published by the hospital.
+        tests: [non_negative]
+      - name: payer_name_raw
+        description: Payer name exactly as published.
+      - name: plan_name_raw
+        description: Plan name exactly as published.
+      - name: negotiated_dollar
+        description: Negotiated dollar rate when the hospital published one.
+        tests: [non_negative]
+      - name: negotiated_percentage
+        description: Negotiated percent of charge when no dollar was published.
+      - name: negotiated_algorithm
+        description: Free-text algorithm when the hospital did not publish a number.
+      - name: estimated_amount
+        description: Optional estimated amount published beside an algorithm.
+        tests: [non_negative]
+      - name: methodology
+        description: Hospital methodology note for the negotiated charge.
+      - name: min_negotiated
+        description: Minimum negotiated rate published for the code and setting.
+      - name: max_negotiated
+        description: Maximum negotiated rate published for the code and setting.
+      - name: additional_notes
+        description: Additional generic notes from the MRF row.
+      - name: source_row_hash
+        description: SHA-256 of the canonical charge row. Dedup key.
+        tests: [not_null, unique]
+      - name: parser_version
+        description: Parser version that wrote the row.
+      - name: ingested_at
+        description: UTC timestamp when the row was parsed.
+  - name: stg_mrf_index
+    description: Discovered MRF URLs.
+    columns:
+      - name: source_id
+        description: Hospital publisher id.
+      - name: location_name
+        description: location-name from cms-hpt.txt.
+      - name: source_page_url
+        description: Human-readable price transparency page.
+      - name: mrf_url
+        description: Machine-readable file URL.
+      - name: contact_name
+        description: Contact name from cms-hpt.txt.
+      - name: contact_email
+        description: Contact email from cms-hpt.txt.
+      - name: discovered_at
+        description: When CareTrace stored the index row.
+  - name: stg_parse_stats
+    description: Parse quality stats per file.
+    columns:
+      - name: file_id
+        description: File that was parsed.
+        tests: [not_null]
+      - name: source_id
+        description: Hospital publisher id.
+      - name: format
+        description: Detected format such as json_v2 or csv_tall.
+      - name: rows
+        description: Rows accepted into bronze.
+      - name: quarantined
+        description: Rows sent to quarantine.
+      - name: quarantine_pct
+        description: Quarantined divided by accepted plus quarantined.
+      - name: distinct_payers
+        description: Distinct raw payer names seen in the file.
+      - name: parsed_at
+        description: When the parse finished.

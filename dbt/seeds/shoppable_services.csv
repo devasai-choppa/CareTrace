@@ -1,0 +1,70 @@
+code,code_type,plain_label
+73721,CPT,Knee MRI
+73718,CPT,Thigh MRI
+73720,CPT,Lower leg MRI
+72148,CPT,Lower back MRI
+72141,CPT,Neck MRI
+70551,CPT,Brain MRI
+70553,CPT,Brain MRI with contrast
+74177,CPT,Abdomen and pelvis CT
+74176,CPT,Abdomen and pelvis CT without contrast
+70450,CPT,Head CT
+71250,CPT,Chest CT
+76700,CPT,Abdominal ultrasound
+76830,CPT,Pelvic ultrasound
+76856,CPT,Pelvic ultrasound complete
+77067,CPT,Screening mammogram
+77066,CPT,Diagnostic mammogram both breasts
+73030,CPT,Shoulder x-ray
+73562,CPT,Knee x-ray three views
+72100,CPT,Lower back x-ray
+71046,CPT,Chest x-ray two views
+80053,CPT,Comprehensive blood chemistry panel
+80048,CPT,Basic blood chemistry panel
+80061,CPT,Lipid panel
+85025,CPT,Complete blood count with differential
+84443,CPT,Thyroid stimulating hormone test
+83036,CPT,Hemoglobin A1c test
+81001,CPT,Urinalysis with microscopy
+87389,CPT,HIV antigen and antibody test
+87804,CPT,Influenza immunoassay
+87635,CPT,Respiratory pathogen panel
+36415,CPT,Routine blood draw
+99202,CPT,New patient visit straightforward
+99203,CPT,New patient visit low complexity
+99204,CPT,New patient visit moderate
+99205,CPT,New patient visit high complexity
+99211,CPT,Established patient nurse visit
+99212,CPT,Established visit straightforward
+99213,CPT,Established visit low complexity
+99214,CPT,Established visit moderate
+99215,CPT,Established visit high complexity
+99281,CPT,Emergency visit minimal
+99282,CPT,Emergency visit low
+99283,CPT,Emergency visit moderate
+99284,CPT,Emergency visit high
+99285,CPT,Emergency visit critical
+27447,CPT,Total knee replacement
+27130,CPT,Total hip replacement
+45378,CPT,Diagnostic colonoscopy
+45380,CPT,Colonoscopy with biopsy
+45385,CPT,Colonoscopy with lesion removal
+43239,CPT,Upper endoscopy with biopsy
+66984,CPT,Cataract surgery with lens implant
+59400,CPT,Obstetric care for vaginal delivery
+59510,CPT,Cesarean delivery care
+29881,CPT,Knee arthroscopy with meniscus surgery
+42820,CPT,Tonsil and adenoid removal under age 12
+47562,CPT,Laparoscopic gallbladder removal
+97110,CPT,Therapeutic exercise
+97140,CPT,Manual therapy
+90834,CPT,Psychotherapy 45 minutes
+90837,CPT,Psychotherapy 60 minutes
+93000,CPT,Electrocardiogram with interpretation
+93306,CPT,Echocardiogram complete
+93458,CPT,Left heart catheterization
+G0101,HCPCS,Cervical or vaginal cancer screening
+G0439,HCPCS,Annual wellness visit subsequent
+A0428,HCPCS,Basic life support ambulance non-emergency
+470,MS-DRG,Major hip or knee replacement without MCC
+291,MS-DRG,Heart failure and shock with MCC

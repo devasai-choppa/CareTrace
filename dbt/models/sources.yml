@@ -1,0 +1,50 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: Parquet written by the CareTrace parsers and resolvers.
+    tables:
+      - name: standard_charges
+        description: One row per code, setting, and payer cell from a hospital MRF.
+        meta:
+          external_location: "read_parquet('../data/bronze/standard_charges/**/*.parquet', union_by_name=true)"
+      - name: parse_stats
+        description: Per-file parse counts, including the quarantine share.
+        meta:
+          external_location: "read_parquet('../data/bronze/parse_stats/*.parquet', union_by_name=true)"
+      - name: mrf_index
+        description: Discovered machine-readable file URLs.
+        meta:
+          external_location: "read_parquet('../data/bronze/mrf_index/*.parquet', union_by_name=true)"
+      - name: payer_resolution
+        description: Raw payer name to canonical payer_id.
+        meta:
+          external_location: "read_parquet('../data/bronze/payer_resolution/*.parquet', union_by_name=true)"
+      - name: person
+        description: OMOP person rows from synthetic FHIR.
+        meta:
+          external_location: "read_parquet('../data/bronze/omop/person/*.parquet', union_by_name=true)"
+      - name: visit_occurrence
+        description: OMOP visits from synthetic FHIR encounters.
+        meta:
+          external_location: "read_parquet('../data/bronze/omop/visit_occurrence/*.parquet', union_by_name=true)"
+      - name: procedure_occurrence
+        description: OMOP procedures from synthetic FHIR.
+        meta:
+          external_location: "read_parquet('../data/bronze/omop/procedure_occurrence/*.parquet', union_by_name=true)"
+      - name: condition_occurrence
+        description: OMOP conditions from synthetic FHIR.
+        meta:
+          external_location: "read_parquet('../data/bronze/omop/condition_occurrence/*.parquet', union_by_name=true)"
+      - name: drug_exposure
+        description: OMOP drug exposures from synthetic FHIR.
+        meta:
+          external_location: "read_parquet('../data/bronze/omop/drug_exposure/*.parquet', union_by_name=true)"
+      - name: payer_plan_period
+        description: OMOP coverage periods from synthetic FHIR.
+        meta:
+          external_location: "read_parquet('../data/bronze/omop/payer_plan_period/*.parquet', union_by_name=true)"
+      - name: directory_trust
+        description: Provider directory trust scores.
+        meta:
+          external_location: "read_parquet('../data/bronze/directory_trust/*.parquet', union_by_name=true)"

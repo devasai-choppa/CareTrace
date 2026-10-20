@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: int_charges_resolved
+    description: Charges joined to canonical payers and shoppable labels.
+    columns:
+      - name: payer_id
+        description: Canonical payer id when resolution is confident.
+        tests:
+          - relationships:
+              to: ref('payers')
+              field: payer_id
+      - name: is_shoppable
+        description: True when the code is on the CareTrace shoppable list.
+      - name: plain_label
+        description: Plain-language label written by CareTrace, not an AMA descriptor.
+  - name: int_charges_quality
+    description: Per-row quality flags for negotiated rates.
+    columns:
+      - name: missing_negotiated
+        description: No dollar, percent, or algorithm was published.
+      - name: percent_only
+        description: Only a percent of charge was published.
+      - name: algorithm_only
+        description: Only an algorithm was published.
+      - name: outlier_vs_peer
+        description: Dollar rate is above Q3 + 3 * IQR among peers for the same code and payer.
+  - name: int_entities_payer
+    description: Payer entity ids produced by resolution.
+  - name: int_entities_provider
+    description: Provider entity ids from the directory trust table.

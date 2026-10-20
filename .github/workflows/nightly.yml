@@ -1,0 +1,31 @@
+name: nightly
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: uv sync --extra dev
+      - name: Discover, download, parse, and build
+        env:
+          DBT_PROFILES_DIR: ${{ github.workspace }}/dbt
+        run: |
+          cp dbt/profiles.yml.example dbt/profiles.yml
+          uv run caretrace load-samples
+          uv run caretrace discover || true
+          uv run caretrace download || true
+          uv run caretrace parse --samples
+          cd dbt && uv run dbt deps && uv run dbt build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: parse-stats
+          path: data/bronze/parse_stats
