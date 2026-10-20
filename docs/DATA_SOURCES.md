@@ -27,18 +27,28 @@ A live `caretrace discover` on 2026-10-20 stored one file per hospital:
 
 `caretrace download --max-gb` stops a file when its `Content-Length` is over the cap, before the body is saved.
 
-The two smallest indexes were downloaded and parsed on 2026-10-20. Both are CMS CSV template 3.0.0, last updated 2026-03-27. A hospital-info block sits above the charge header, and the CPT is often `code|2` next to a local CDM in `code|1`. The parser skips that block and writes one bronze row per code.
+All five indexes were downloaded and parsed on 2026-10-20. The CSV files are template 3.0.0. A hospital-info block sits above the charge header, and the CPT is often `code|2` next to a local CDM in `code|1`. The parser skips that block and writes one bronze row per code. Boston Medical Center's zip also contains a macOS `._` resource fork, which download skips. Twenty-one of its rows leave an inch mark (`9"X`) unescaped; the parser doubles that quote before the scan.
 
-| source_id | Zip | Charge CSV | Bronze rows | Quarantined | Payers |
+| source_id | Download | Charge file | Bronze rows | Quarantined | Payers |
 | --- | --- | --- | --- | --- | --- |
-| mgh | 3.6 MB | 63 MB | 463,953 | 0 | 35 |
-| bwh | 2.7 MB | 46 MB | 314,673 | 0 | 33 |
+| mgh | 3.6 MB zip | 63 MB CSV | 463,953 | 0 | 35 |
+| bwh | 2.7 MB zip | 46 MB CSV | 314,673 | 0 | 33 |
+| bidmc | 27 MB JSON | JSON 3.0.0 | 98,646 | 0 | 17 |
+| bmc | 41 MB zip | 461 MB CSV | 3,836,832 | 0 | 78 |
+| tufts | 169 MB zip | 1.7 GB CSV | 17,313,873 | 0 | 210 |
 
-Brigham and Women's outpatient CPT `73721` for `BLUE CROSS BLUE SHIELD [110001]` / `HB AMC BLUE CROSS HMO` is $966.58 (gross $3,332.00, discounted cash $2,499.00). Row hash `b9658f4f847a3dd1e7d12fb00cb94bc029fb4aeac7c8c4046799b3a1b9bdc3ab`. The Mass General file has no Blue Cross dollar for that code; its Harvard Pilgrim PPO dollar is $230.56. These are published charges, not patient quotes, and they are not the synthetic sample rates.
+Published CPT `73721` dollars from those files (not the synthetic sample rates):
 
-The zip and CSV stay in gitignored `data/raw/`. The verification parse wrote bronze under a scratch directory so `load-samples` and dbt still build the five-hospital demo. Parsing the same files into `data/bronze/` would mix them into the next mart rebuild.
+| Hospital | Payer and plan | Dollar | Gross | Cash | As of | Row hash |
+| --- | --- | --- | --- | --- | --- | --- |
+| Brigham and Women's, outpatient | `BLUE CROSS BLUE SHIELD [110001]` / `HB AMC BLUE CROSS HMO` | $966.58 | $3,332.00 | $2,499.00 | 2026-03-27 | `b9658f4f847a3dd1e7d12fb00cb94bc029fb4aeac7c8c4046799b3a1b9bdc3ab` |
+| Beth Israel, outpatient | `BCBS` / `HMO` | $638.06 | — | — | 2026-04-01 | `97b0e1f8cd911ddc90bf45b37d144e694b465e7021a972535f33462f575bc846` |
+| Boston Medical Center, both | `BCBS [6001]` / `BMC HB BLUE CROSS` | $574.25 | $4,613.00 | $2,075.85 | 03/13/2026 | `9454d603cb5ba41b05c85c6d9dce3528a3210e19ae2b2d0aa3bd46ed2331c47c` |
+| Tufts, both | `BLUE CROSS OF MA [100274]` / `HB XR BCBSMA HMO TMC` | $445.72 | $815.50 | $570.85 | 4/1/2026 | `2d8b131b69c05f0a28f98cc956770a7e70ebf9f2320a8d3cc1908114f1098be9` |
 
-Tufts (~169 MB zip), Boston Medical Center (~41 MB zip), and Beth Israel (~27 MB JSON) were not downloaded.
+Beth Israel labels `73721` as HCPCS in `code_information`. The code is stored as published. Mass General's file has no Blue Cross dollar for that code; its Harvard Pilgrim PPO dollar is $230.56. These are published charges, not patient quotes.
+
+The downloads stay in gitignored `data/raw/`. The verification parse wrote bronze under a scratch directory so `load-samples` and dbt still build the five-hospital demo. Parsing the same files into `data/bronze/` would mix them into the next mart rebuild.
 
 The committed samples in `data/samples/` follow the CMS template v2 shape: one JSON file, one tall CSV, and one wide CSV, plus two more JSON files so all five hospitals have a knee MRI row. They are not the hospitals' real MRFs.
 

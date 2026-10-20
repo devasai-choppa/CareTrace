@@ -14,6 +14,7 @@ from caretrace.parse.common import (
     stamp_row,
     validate_row,
 )
+from caretrace.parse.csv_repair import csv_path_for_parse
 from caretrace.parse.preamble import cms_csv_preamble
 
 COLUMN_MAP = {
@@ -113,6 +114,7 @@ def iter_rows(
     """Yield tall-CSV rows in Polars batches."""
     del source_file_uri
     meta, skip, _header = cms_csv_preamble(path)
+    path = csv_path_for_parse(path)
     frame_iter = pl.scan_csv(
         path, infer_schema=False, skip_rows=skip, encoding="utf8-lossy"
     ).collect_batches(chunk_size=batch_size, engine="streaming")

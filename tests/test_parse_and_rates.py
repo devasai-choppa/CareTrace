@@ -65,6 +65,30 @@ def test_v3_wide_preamble(tmp_path: Path) -> None:
     assert rows[0]["version"] == "3.0.0"
 
 
+def test_inch_mark_quote_stays_in_description(tmp_path: Path) -> None:
+    path = tmp_path / "bmc.csv"
+    path.write_text(
+        "hospital_name,last_updated_on,version\n"
+        "Boston Medical Center,03/13/2026,3.0.0\n"
+        "description,code|1,code|1|type,setting,payer_name,plan_name,standard_charge|negotiated_dollar\n"
+        '"DILATOR 9"X 1",86023,CPT,both,BCBS,HMO,12.50\n',
+        encoding="utf-8",
+    )
+    from caretrace.parse.csv_tall import iter_rows
+
+    rows = [
+        row
+        for row, reason in iter_rows(
+            path, source_id="bmc", file_id="live", source_file_uri=str(path)
+        )
+        if reason is None
+    ]
+    assert len(rows) == 1
+    assert rows[0]["code"] == "86023"
+    assert rows[0]["description"] == 'DILATOR 9"X 1'
+    assert rows[0]["negotiated_dollar"] == 12.5
+
+
 def test_samples_build_cited_quotes(settings) -> None:
     load_samples(settings)
     assert negotiated_resolution_rate(settings) >= 0.85

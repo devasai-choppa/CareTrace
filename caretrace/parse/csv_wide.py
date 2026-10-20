@@ -15,6 +15,7 @@ from caretrace.parse.common import (
     stamp_row,
     validate_row,
 )
+from caretrace.parse.csv_repair import csv_path_for_parse
 from caretrace.parse.csv_tall import COLUMN_MAP, MONEY, _apply_preamble, _text, code_pairs
 from caretrace.parse.preamble import cms_csv_preamble
 
@@ -36,6 +37,7 @@ def iter_rows(
     """Yield one bronze row per wide payer/plan field group."""
     del source_file_uri
     meta, skip, _header = cms_csv_preamble(path)
+    path = csv_path_for_parse(path)
     frame_iter = pl.scan_csv(
         path, infer_schema=False, skip_rows=skip, encoding="utf8-lossy"
     ).collect_batches(chunk_size=batch_size, engine="streaming")

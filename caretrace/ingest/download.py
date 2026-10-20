@@ -139,7 +139,7 @@ def _materialize(path: Path, source_dir: Path) -> list[Path]:
         extracted: list[Path] = []
         with zipfile.ZipFile(path) as archive:
             for info in archive.infolist():
-                if info.is_dir():
+                if info.is_dir() or _skip_zip_member(info.filename):
                     continue
                 target = source_dir / f"{path.stem}_{Path(info.filename).name}"
                 with archive.open(info) as src, target.open("wb") as dst:
@@ -147,6 +147,13 @@ def _materialize(path: Path, source_dir: Path) -> list[Path]:
                 extracted.append(target)
         return extracted
     return [path]
+
+
+def _skip_zip_member(name: str) -> bool:
+    """Ignore macOS resource forks that hospitals sometimes leave in the zip."""
+    parts = Path(name).parts
+    base = parts[-1] if parts else ""
+    return not base or base.startswith("._") or base == ".DS_Store" or "__MACOSX" in parts
 
 
 def download_one(

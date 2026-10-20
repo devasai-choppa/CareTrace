@@ -94,7 +94,6 @@ def test_discover_writes_index(settings) -> None:
 
 
 @respx.mock
-@respx.mock
 def test_download_rejects_over_cap(settings) -> None:
     respx.get("https://files.example/big.zip").mock(
         return_value=httpx.Response(200, content=b"x" * 1000, headers={"content-length": "1000"})
@@ -145,3 +144,28 @@ def test_download_zip_and_skip(settings) -> None:
     assert stored["sha256"] == first["sha256"]
     client.close()
     assert Path(str(extracted[0])).exists()
+
+
+@respx.mock
+def test_download_skips_appledouble(settings) -> None:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("charges.csv", "description,code\nKnee,73721\n")
+        archive.writestr("._charges.csv", b"\x00\x05Mac OS X")
+        archive.writestr("__MACOSX/charges.csv", b"\x00")
+    respx.get("https://files.example/apple.zip").mock(
+        return_value=httpx.Response(200, content=buffer.getvalue())
+    )
+    result = download_one(
+        "bmc",
+        "https://files.example/apple.zip",
+        settings=settings,
+        client=httpx.Client(),
+        limiter=HostRateLimiter(0),
+    )
+    extracted_raw = result["extracted"]
+    assert isinstance(extracted_raw, list)
+    extracted = [Path(str(path)) for path in extracted_raw]
+    assert len(extracted) == 1
+    assert extracted[0].name.endswith("charges.csv")
+    assert not extracted[0].name.startswith("._")
