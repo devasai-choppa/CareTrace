@@ -10,7 +10,7 @@ import pandas as pd
 from caretrace.config import Settings, get_settings
 from caretrace.ingest.manifest import connect
 from caretrace.ingest.registry import SourceRegistry, load_registry
-from caretrace.metrics import quality_reasons, quality_score, transparency_score
+from caretrace.metrics import quality_reasons, transparency_score
 from caretrace.models.domain import RateQuote
 from caretrace.models.lineage import Cited, Lineage
 from caretrace.parse.common import PARSER_VERSION
@@ -37,9 +37,17 @@ def _sql_path(path: str) -> str:
 
 
 def rebuild_marts(
-    settings: Settings | None = None, registry: SourceRegistry | None = None
+    settings: Settings | None = None,
+    registry: SourceRegistry | None = None,
+    *,
+    codes: set[str] | None = None,
 ) -> dict[str, int]:
-    """Build gold serving tables in DuckDB from bronze Parquet."""
+    """Build gold serving tables in DuckDB from bronze Parquet.
+
+    When ``codes`` is set, only those billing codes enter the serving marts.
+    Live hospital files are large; the demo path passes the shoppable seed list
+    so quality scoring stays in SQL and never loads every bronze row into pandas.
+    """
     cfg = settings or get_settings()
     reg = registry or load_registry()
     bronze = cfg.bronze_dir / "standard_charges"
@@ -54,11 +62,18 @@ def rebuild_marts(
         conn.execute("CREATE SCHEMA IF NOT EXISTS gold")
         bronze_glob = _sql_path(str(bronze / "**" / "*.parquet"))
         payer_path = _sql_path(str(payer_file))
+        code_filter = ""
+        if codes is not None:
+            if not codes:
+                raise ValueError("codes filter must not be empty")
+            listed = ", ".join(f"'{_sql_path(code)}'" for code in sorted(codes))
+            code_filter = f"WHERE code IN ({listed})"
         conn.execute(
             f"""
             CREATE OR REPLACE TABLE gold._charges AS
             WITH raw AS (
               SELECT * FROM read_parquet('{bronze_glob}', union_by_name=true)
+              {code_filter}
             ),
             resolved AS (
               SELECT
@@ -102,28 +117,37 @@ def rebuild_marts(
                 s.negotiated_dollar IS NOT NULL
                 AND p.peer_n >= 4
                 AND s.negotiated_dollar > p.q3 + 3 * (p.q3 - p.q1)
-              ) AS outlier
+              ) AS outlier,
+              greatest(
+                0.0,
+                least(
+                  1.0,
+                  1.0
+                  - CASE WHEN s.negotiated_dollar IS NULL THEN 0.35 ELSE 0.0 END
+                  - CASE
+                      WHEN s.negotiated_dollar IS NULL
+                       AND s.negotiated_percentage IS NOT NULL
+                       AND (s.negotiated_algorithm IS NULL OR s.negotiated_algorithm = '')
+                      THEN 0.15 ELSE 0.0
+                    END
+                  - CASE
+                      WHEN s.negotiated_dollar IS NULL
+                       AND s.negotiated_algorithm IS NOT NULL
+                       AND s.negotiated_algorithm <> ''
+                      THEN 0.25 ELSE 0.0
+                    END
+                  - CASE
+                      WHEN s.negotiated_dollar IS NOT NULL
+                       AND p.peer_n >= 4
+                       AND s.negotiated_dollar > p.q3 + 3 * (p.q3 - p.q1)
+                      THEN 0.25 ELSE 0.0
+                    END
+                )
+              ) AS quality_score
             FROM resolved s
             LEFT JOIN peer p ON s.code = p.code AND s.payer_id = p.payer_id
             """
         )
-        frame = conn.execute("SELECT * FROM gold._charges").fetchdf()
-        frame["quality_score"] = [
-            quality_score(
-                has_dollar=_is_number(value),
-                percent_only=bool(percent) and not _is_number(value),
-                algorithm_only=bool(algo) and not _is_number(value),
-                outlier=bool(out) if out == out else False,
-            )
-            for value, percent, algo, out in zip(
-                frame["negotiated_dollar"],
-                frame["percent_only"],
-                frame["algorithm_only"],
-                frame["outlier"],
-                strict=True,
-            )
-        ]
-        conn.register("scored", frame)
         conn.execute(
             """
             CREATE OR REPLACE TABLE gold.mart_negotiated_rates AS
@@ -154,7 +178,7 @@ def rebuild_marts(
                   PARTITION BY source_id, code, setting, payer_id, coalesce(plan_name_raw, '')
                   ORDER BY quality_score DESC, ingested_at DESC
                 ) AS rn
-              FROM scored
+              FROM gold._charges
               WHERE payer_id IS NOT NULL
             )
             WHERE rn = 1

@@ -40,8 +40,14 @@ def parse_file(
     source_file_uri: str | None = None,
     hospital_name: str | None = None,
     settings: Settings | None = None,
+    code_allowlist: set[str] | None = None,
 ) -> dict[str, object]:
-    """Detect, stream, and write one MRF. Quarantine rows that fail validation."""
+    """Detect, stream, and write one MRF. Quarantine rows that fail validation.
+
+    When ``code_allowlist`` is set, rows whose billing code is outside that set
+    are dropped before bronze write. Live hospital files are multi-million-row;
+    the demo ``load-live`` path keeps shoppable codes only.
+    """
     cfg = settings or get_settings()
     uri = source_file_uri or str(path)
     fmt = detect_format(path)
@@ -52,6 +58,7 @@ def parse_file(
     good = ParquetBatchWriter(good_dir)
     bad = ParquetBatchWriter(bad_dir, quarantine=True)
     payers: set[str] = set()
+    skipped = 0
     try:
         if fmt == "json_v2":
             stream = json_v2.iter_rows(
@@ -76,6 +83,12 @@ def parse_file(
         else:
             raise ValueError(f"unsupported MRF format: {fmt}")
         for row, reason in stream:
+            code = row.get("code")
+            if code_allowlist is not None and (
+                not isinstance(code, str) or code not in code_allowlist
+            ):
+                skipped += 1
+                continue
             payer = row.get("payer_name_raw")
             if isinstance(payer, str) and payer:
                 payers.add(payer)
@@ -100,6 +113,7 @@ def parse_file(
         "quarantined": quarantined,
         "quarantine_pct": (quarantined / total) if total else 0.0,
         "distinct_payers": len(payers),
+        "skipped_codes": skipped,
         "parsed_at": datetime.now(UTC),
     }
     _record_stats(stats, cfg)

@@ -2,7 +2,7 @@ PATH := $(HOME)/.local/bin:$(PATH)
 export PATH
 export DBT_PROFILES_DIR := $(CURDIR)/dbt
 
-.PHONY: install lint type test check ingest dbt api ui eval load-samples format
+.PHONY: install lint type test check ingest dbt api ui eval load-samples load-live format
 
 install:
 	uv sync --extra dev
@@ -25,6 +25,9 @@ check: lint type test
 
 load-samples:
 	uv run caretrace load-samples
+
+load-live:
+	uv run caretrace load-live
 
 ingest: load-samples
 	uv run caretrace discover || true

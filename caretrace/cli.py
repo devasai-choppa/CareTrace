@@ -19,9 +19,9 @@ from caretrace.ingest.download import HostRateLimiter, download
 from caretrace.models.domain import Finding, RateQuote
 from caretrace.parse.payer_resolve import append_confirmation, resolve_all, review_band
 from caretrace.parse.runner import parse_file
-from caretrace.pipeline import load_samples
+from caretrace.pipeline import load_live, load_samples
 from caretrace.policy.fetch import fetch_policies
-from caretrace.warehouse import get_rates
+from caretrace.warehouse import get_rates, rebuild_marts
 
 app = typer.Typer(help="CareTrace: cited price estimates and bill audits.", no_args_is_help=True)
 directory_app = typer.Typer(help="Provider directory trust.")
@@ -56,13 +56,33 @@ def parse_command(file_id: str | None = None, samples: bool = False) -> None:
         result = load_samples()
         console.print(result["marts"])
         return
+    from caretrace.config import get_settings
     from caretrace.ingest.manifest import get_file
+    from caretrace.pipeline import _resolve_local_charge
 
     row = get_file(file_id)
     if row is None:
         raise typer.BadParameter(f"unknown file_id {file_id}")
-    stats = parse_file(Path(str(row["uri"])), source_id=str(row["source_id"]), file_id=file_id)
+    cfg = get_settings()
+    source_id = str(row["source_id"])
+    uri = str(row["uri"])
+    local = _resolve_local_charge(cfg.raw_dir / source_id, file_id)
+    if local is None and Path(uri).exists():
+        local = Path(uri)
+    if local is None:
+        raise typer.BadParameter(
+            f"no local charge file for {file_id}; run caretrace download first"
+        )
+    stats = parse_file(
+        local,
+        source_id=source_id,
+        file_id=file_id,
+        source_file_uri=uri if uri.startswith("http") else str(local),
+    )
+    resolve_all(cfg)
+    marts = rebuild_marts(cfg)
     console.print(stats)
+    console.print(marts)
 
 
 @app.command("dbt")
@@ -87,6 +107,27 @@ def dbt_command() -> None:
 def load_samples_command() -> None:
     """Parse sample MRFs and build the local gold tables."""
     console.print(load_samples()["marts"])
+
+
+@app.command("load-live")
+def load_live_command(
+    source_id: str | None = None,
+    max_gb: float | None = None,
+    full: bool = False,
+    skip_download: bool = False,
+) -> None:
+    """Discover, download, and build gold marts from live hospital price files.
+
+    By default only shoppable seed codes are kept. Pass --full to keep every
+    bronze row (needs disk and memory for Tufts/BMC).
+    """
+    result = load_live(
+        source_id=source_id,
+        max_gb=max_gb,
+        shoppable_only=not full,
+        skip_download=skip_download,
+    )
+    console.print(result["marts"])
 
 
 @app.command("serve")

@@ -89,6 +89,30 @@ def test_inch_mark_quote_stays_in_description(tmp_path: Path) -> None:
     assert rows[0]["negotiated_dollar"] == 12.5
 
 
+def test_inch_mark_before_paren_stays_in_description(tmp_path: Path) -> None:
+    path = tmp_path / "bwh.csv"
+    path.write_text(
+        "hospital_name,last_updated_on,version\n"
+        "Brigham and Women's Hospital,2026-03-27,3.0.0\n"
+        "description,code|1,code|1|type,setting,payer_name,plan_name,standard_charge|negotiated_dollar\n"
+        '"Wound Dress 4"X 5" (129 Sq Cm)",Q4104,HCPCS,outpatient,BCBS,HMO,12.50\n',
+        encoding="utf-8",
+    )
+    from caretrace.parse.csv_tall import iter_rows
+
+    rows = [
+        row
+        for row, reason in iter_rows(
+            path, source_id="bwh", file_id="live", source_file_uri=str(path)
+        )
+        if reason is None
+    ]
+    assert len(rows) == 1
+    assert rows[0]["code"] == "Q4104"
+    assert rows[0]["description"] == 'Wound Dress 4"X 5" (129 Sq Cm)'
+    assert rows[0]["negotiated_dollar"] == 12.5
+
+
 def test_samples_build_cited_quotes(settings) -> None:
     load_samples(settings)
     assert negotiated_resolution_rate(settings) >= 0.85
@@ -112,3 +136,51 @@ def test_estimate_table() -> None:
     capped = estimate_oop(1000, 200, 0.2, 50, 100)
     assert capped.value.patient_responsibility == 100
     assert capped.value.assumptions
+
+
+def test_live_bronze_feeds_marts(settings) -> None:
+    """A downloaded-shaped live CSV rebuilds gold with a published BCBS dollar."""
+    from caretrace.ingest.download import file_id_for
+    from caretrace.ingest.manifest import record_download
+    from caretrace.parse.payer_resolve import resolve_all
+    from caretrace.parse.runner import parse_file
+    from caretrace.pipeline import _clear_charge_bronze
+    from caretrace.warehouse import rebuild_marts
+
+    uri = "https://example.invalid/bwh_standardcharges.csv"
+    file_id = file_id_for("bwh", uri)
+    raw_dir = settings.raw_dir / "bwh"
+    raw_dir.mkdir(parents=True)
+    path = raw_dir / f"{file_id}_charges.csv"
+    path.write_text(
+        "hospital_name,last_updated_on,version\n"
+        "Brigham and Women's Hospital,2026-03-27,3.0.0\n"
+        "description,code|1,code|1|type,code|2,code|2|type,setting,"
+        "payer_name,plan_name,standard_charge|negotiated_dollar,"
+        "standard_charge|gross,standard_charge|discounted_cash\n"
+        "Knee MRI,PX-1,CDM,73721,CPT,outpatient,"
+        "BLUE CROSS BLUE SHIELD [110001],HB AMC BLUE CROSS HMO,966.58,3332.00,2499.00\n"
+        "Other,99999,CPT,outpatient,Aetna,HMO,12.00,20.00,15.00\n",
+        encoding="utf-8",
+    )
+    record_download(file_id, "bwh", uri, "abc", path.stat().st_size, settings=settings)
+    _clear_charge_bronze(settings)
+    stats = parse_file(
+        path,
+        source_id="bwh",
+        file_id=file_id,
+        source_file_uri=uri,
+        hospital_name="Brigham and Women's Hospital",
+        settings=settings,
+        code_allowlist={"73721"},
+    )
+    assert stats["rows"] >= 1
+    assert stats["skipped_codes"] >= 1
+    resolve_all(settings)
+    rebuild_marts(settings, codes={"73721"})
+    quotes = get_rates("73721", "bcbsma", zip_code="02115", settings=settings)
+    assert len(quotes) == 1
+    assert quotes[0].value.rate_dollar == 966.58
+    assert quotes[0].value.source_id == "bwh"
+    assert quotes[0].lineage[0].source_file_uri == uri
+    assert quotes[0].lineage[0].source_row_hash

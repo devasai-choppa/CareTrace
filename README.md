@@ -234,6 +234,14 @@ uv run caretrace chat "knee MRI with payer X near 02115"
 uv run python -m eval.run
 ```
 
+To cite published dollars from the Boston hospital files instead of the samples:
+
+```bash
+uv run caretrace load-live
+```
+
+That discovers each `cms-hpt.txt`, downloads the indexed MRF, keeps shoppable seed codes by default, and rebuilds gold. Use `--full` only when you want every bronze row.
+
 Full setup:
 
 ```bash
@@ -270,7 +278,7 @@ Do not upload a real EOB. Demo mode rejects Social Security number patterns. See
 
 ## Roadmap
 
-The five Boston machine-readable files are parsed; see `docs/DATA_SOURCES.md`. Swap the mock model for Groq when you want a live narrative. Point dbt at Snowflake or Databricks with the extra profiles. Replace the lexical entailment check with a cross-encoder if you need graded faithfulness.
+`caretrace load-live` wires the five Boston machine-readable files into the gold marts; see `docs/DATA_SOURCES.md`. Swap the mock model for Groq when you want a live narrative. Point dbt at Snowflake or Databricks with the extra profiles. Replace the lexical entailment check with a cross-encoder if you need graded faithfulness.
 
 ## Interview talking points
 
