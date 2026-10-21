@@ -4,7 +4,7 @@ CareTrace closes the loop between a healthcare price estimate and the bill that 
 
 ![CI](https://img.shields.io/badge/ci-ruff%20mypy%20pytest%20dbt-0F766E) ![coverage](https://img.shields.io/badge/coverage-83%25-0F766E) ![eval](https://img.shields.io/badge/price%20exact--match-1.00-0F766E) ![license](https://img.shields.io/badge/license-MIT-0F766E)
 
-Demo GIF: `docs/demo.gif` (record after the Streamlit walkthrough in `docs/DEMO_SCRIPT.md`).
+The click-through is `docs/DEMO_SCRIPT.md`: estimate, audit, draft appeal, then ask.
 
 ## The problem in 60 seconds
 
@@ -199,7 +199,7 @@ Laplace histogram median, epsilon tracked by `PrivacyAccountant`, k of 11. Local
 
 A rate on screen has a file, a hash, and a time. Confidence is the row's quality score, with reasons such as "percent only" or "algorithm only." The verifier abstains on a number it cannot bind. Prior auth abstains when the policy never mentions the code. View source in the Estimate page is the same lineage object the API returns.
 
-Screenshot placeholder: `docs/view-source.png`.
+![Boston Medical Center at $980, with the sample MRF path and row hash](docs/view-source.png)
 
 ## Results
 
