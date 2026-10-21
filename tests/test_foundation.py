@@ -56,6 +56,14 @@ def test_phi_guard() -> None:
     with pytest.raises(PhiRejectedError):
         assert_no_phi("ssn 123-45-6789", demo_mode=True)
     assert_no_phi("123-45-6789", demo_mode=False)
+    # Live MRF URLs embed nine-digit CMS hospital ids; those are not SSNs.
+    assert_no_phi(
+        "https://www.tuftsmedicine.org/sites/default/files/2026-03/"
+        "043400617_tuftsmedicalcenter_standardcharges.csv.zip",
+        demo_mode=True,
+    )
+    with pytest.raises(PhiRejectedError):
+        assert_no_phi("member id 123456789", demo_mode=True)
 
 
 def test_score_formulas() -> None:

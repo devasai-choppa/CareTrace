@@ -13,12 +13,20 @@ class PhiRejectedError(ValueError):
 
 
 def find_ssn(text: str) -> str | None:
-    """Return the first SSN-like token, if any."""
+    """Return the first SSN-like token, if any.
+
+    Nine-digit CMS hospital ids inside MRF URLs or filenames (for example
+    ``043400617_tuftsmedicalcenter_...``) are not treated as SSNs.
+    """
     match = SSN_PATTERN.search(text)
     if match:
         return match.group(0)
-    compact = SSN_COMPACT.search(text)
-    if compact:
+    for compact in SSN_COMPACT.finditer(text):
+        start, end = compact.span()
+        before = text[start - 1] if start > 0 else ""
+        after = text[end] if end < len(text) else ""
+        if before in {"/", "_", "-", "."} or after in {"/", "_", "-", "."}:
+            continue
         return compact.group(0)
     return None
 
