@@ -1,0 +1,26 @@
+[
+  {
+    "payer_id": "bcbsma",
+    "npi": "1234567893",
+    "name": "Priya Shah",
+    "address": "55 Fruit Street, Boston, MA 02114",
+    "phone": "617-726-2000",
+    "taxonomy": "Diagnostic Radiology",
+    "last_updated": "2026-08-01",
+    "network_status": "in-network",
+    "in_mrf": true,
+    "npi_active": true
+  },
+  {
+    "payer_id": "bcbsma",
+    "npi": "1000000001",
+    "name": "Ghost Imaging LLC",
+    "address": "1 Nowhere Ave, Boston, MA 02115",
+    "phone": "000-000-0000",
+    "taxonomy": "General Practice",
+    "last_updated": "2019-01-01",
+    "network_status": "in-network",
+    "in_mrf": false,
+    "npi_active": false
+  }
+]

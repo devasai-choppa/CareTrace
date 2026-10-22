@@ -1,0 +1,47 @@
+{
+  "hospital_name": "Boston Medical Center",
+  "last_updated_on": "2026-04-20",
+  "version": "2.0.0",
+  "standard_charge_information": [
+    {
+      "description": "Knee MRI",
+      "code_information": [{"code": "73721", "type": "CPT"}],
+      "standard_charges": [
+        {
+          "setting": "outpatient",
+          "billing_class": "hospital",
+          "gross_charge": 2400,
+          "discounted_cash": 600,
+          "payers_information": [
+            {
+              "payer_name": "BCBSMA",
+              "plan_name": "HMO Blue",
+              "standard_charge_dollar": 980,
+              "methodology": "case rate"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Established visit low",
+      "code_information": [{"code": "99213", "type": "CPT"}],
+      "standard_charges": [
+        {
+          "setting": "outpatient",
+          "billing_class": "professional",
+          "gross_charge": 250,
+          "discounted_cash": 80,
+          "payers_information": [
+            {
+              "payer_name": "Harvard Pilgrim",
+              "plan_name": "HMO",
+              "standard_charge_dollar": 140,
+              "methodology": "fee schedule"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

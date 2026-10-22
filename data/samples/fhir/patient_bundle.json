@@ -1,0 +1,63 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "syn-001",
+        "gender": "female",
+        "birthDate": "1984-03-12"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Coverage",
+        "id": "cov-001",
+        "beneficiary": {"reference": "Patient/syn-001"},
+        "payor": [{"display": "Blue Cross Blue Shield of Massachusetts"}],
+        "period": {"start": "2026-01-01", "end": "2026-12-31"},
+        "class": [{"name": "plan", "value": "HMO Blue", "type": {"coding": [{"code": "plan"}]}}]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "enc-001",
+        "subject": {"reference": "Patient/syn-001"},
+        "class": {"code": "AMB"},
+        "period": {"start": "2026-06-01", "end": "2026-06-01"}
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-001",
+        "subject": {"reference": "Patient/syn-001"},
+        "encounter": {"reference": "Encounter/enc-001"},
+        "onsetDateTime": "2026-05-01",
+        "code": {"coding": [{"system": "http://snomed.info/sct", "code": "202480001", "display": "Knee pain"}], "text": "Knee pain"}
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "proc-001",
+        "subject": {"reference": "Patient/syn-001"},
+        "encounter": {"reference": "Encounter/enc-001"},
+        "performedDateTime": "2026-06-01",
+        "code": {"coding": [{"system": "http://www.ama-assn.org/go/cpt", "code": "73721", "display": "Knee MRI"}], "text": "Knee MRI"}
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "med-001",
+        "subject": {"reference": "Patient/syn-001"},
+        "encounter": {"reference": "Encounter/enc-001"},
+        "authoredOn": "2026-06-01",
+        "medicationCodeableConcept": {"coding": [{"code": "198440", "display": "Naproxen"}]}
+      }
+    }
+  ]
+}

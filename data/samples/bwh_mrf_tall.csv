@@ -1,0 +1,6 @@
+description,code|1,code|1|type,setting,billing_class,standard_charge|gross,standard_charge|discounted_cash,payer_name,plan_name,standard_charge|negotiated_dollar,standard_charge|negotiated_percentage,standard_charge|negotiated_algorithm,standard_charge|methodology,standard_charge|min,standard_charge|max,additional_generic_notes,hospital_name,last_updated_on
+Knee MRI,73721,CPT,outpatient,hospital,"$2,800.00","$750.00",Blue Cross Blue Shield of MA,HMO Blue,"$1,100.00",N/A,,case rate,980,1750,,Brigham and Women's Hospital,2026-06-15
+Knee MRI,73721,CPT,outpatient,hospital,"$2,800.00","$750.00",Harvard Pilgrim Health Care,HMO,1200.00,N/A,,case rate,980,1750,,Brigham and Women's Hospital,2026-06-15
+Established visit low,99213,CPT,outpatient,professional,280.00,100.00,BCBSMA,HMO Blue,160.00,N/A,,fee schedule,,, ,Brigham and Women's Hospital,2026-06-15
+Comprehensive blood chemistry panel,80053,CPT,outpatient,hospital,200.00,35.00,Blue Cross and Blue Shield of Massachusetts,HMO Blue,48.00,N/A,,fee schedule,,, ,Brigham and Women's Hospital,2026-06-15
+Basic blood chemistry panel,80048,CPT,outpatient,hospital,80.00,20.00,BCBS Massachusetts,HMO Blue,25.00,N/A,,fee schedule,,, ,Brigham and Women's Hospital,2026-06-15

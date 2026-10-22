@@ -1,0 +1,28 @@
+---
+description: CareTrace project rules
+alwaysApply: true
+---
+
+# CareTrace project rules
+Product: CareTrace closes the loop between a healthcare price ESTIMATE and the actual BILL.
+Modules: (1) price lakehouse from hospital price transparency machine-readable files (MRFs),
+(2) provider directory trust scoring vs NPPES, (3) prior-auth policy RAG copilot,
+(4) EOB/bill audit engine + appeal letter drafts, (5) LangGraph agent, (6) FastAPI + Streamlit.
+
+Non-negotiables:
+- TRACEABILITY: every number shown to a user must carry lineage: source_id, source_file_uri,
+  source_row_hash, ingested_at. Never output a price or rule without a citation.
+- CONFIDENCE: every answer object has confidence (0-1) and confidence_reasons[].
+- NO REAL PHI. Use Synthea, CMS Blue Button sandbox, and synthetic EOBs only. Add a PHI guard
+  that rejects uploads containing SSN-like patterns in demo mode.
+- CPT descriptors are AMA-copyrighted: store CPT codes only; never commit CPT descriptor text.
+  HCPCS Level II and MS-DRG descriptions from CMS public files are allowed.
+- Disclaimers: estimates are not quotes; appeal letters are drafts; not legal/medical advice.
+- Large files: stream (ijson / chunked CSV). Never json.load() an MRF.
+- Python 3.11, uv, type hints everywhere, pydantic v2 models, ruff + mypy clean, pytest.
+- Config via pydantic-settings + .env; no secrets in code.
+- LLM access only through caretrace/llm/client.py (provider-agnostic).
+- Structured logging (structlog), JSON logs.
+- Small modules, docstrings on public functions, tests alongside every new module.
+- Before finishing any task: run `make check` and fix failures.
+- Every ML/statistical module must expose an `explain()` method returning human-readable reasons, and log its method + parameters to the lineage record.

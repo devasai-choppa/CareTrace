@@ -1,0 +1,61 @@
+{
+  "prices": {
+    "n": 50.0,
+    "exact_match": 1.0,
+    "citation_correct": 1.0,
+    "latency_p50_ms": 30.751990000226215,
+    "latency_p95_ms": 32.41867800011278,
+    "cost_per_query_usd": 0.0
+  },
+  "prior_auth": {
+    "n": 30.0,
+    "accuracy": 1.0,
+    "unknown_rate": 0.3333333333333333,
+    "citation_page_accuracy": 1.0
+  },
+  "eob": {
+    "n": 30.0,
+    "finding_precision": 1.0,
+    "finding_recall": 1.0,
+    "impact_mae": 0.0,
+    "extraction_f1": 1.0
+  },
+  "verifier": {
+    "n": 5.0,
+    "uncited_number_rate": 0.0,
+    "injection_caught": 1.0,
+    "sample_has_digits": 1.0
+  },
+  "entity_resolution": {
+    "n": 300.0,
+    "fellegi_sunter_f1": 1.0,
+    "rapidfuzz_f1": 0.6666666666666666
+  },
+  "price_intervals": {
+    "overall_coverage": 0.9566666666666667,
+    "mae": 258.074155364909,
+    "mean_width": 2173.192240002863,
+    "explain_nonempty": 1.0
+  },
+  "directory": {
+    "model_auc": 1.0,
+    "baseline_auc": 0.0,
+    "model_brier": 0.0,
+    "baseline_brier": 0.5267000000000001
+  },
+  "privacy": {
+    "release_ok": 1.0,
+    "budget_blocked": 1.0,
+    "small_cell_suppressed": 1.0,
+    "epsilon": 0.1,
+    "k": 11.0
+  },
+  "scale": {
+    "rows": 400.0,
+    "seconds": 0.006338366999898426,
+    "mb": 0.3242645263671875,
+    "mb_per_second": 51.15900142298228,
+    "rows_per_second": 63107.73737248255
+  },
+  "resolution_rate": 0.9565217391304348
+}

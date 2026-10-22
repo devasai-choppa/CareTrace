@@ -1,0 +1,32 @@
+name: eval
+
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  eval:
+    if: github.event.label.name == 'eval'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: uv sync --extra dev
+      - name: Evaluate
+        run: uv run python -m eval.run
+      - name: Summary
+        run: |
+          {
+            echo "## CareTrace eval"
+            echo
+            cat eval/report.md
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: |
+            eval/report.md
+            eval/results.json

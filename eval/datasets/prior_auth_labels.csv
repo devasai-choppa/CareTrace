@@ -1,0 +1,31 @@
+question,payer_id,gold_decision,gold_page
+does 73721 need prior authorization?,bcbsma,yes,2
+is prior auth required for knee MRI 73721?,bcbsma,yes,2
+73721 outpatient elective MRI prior authorization?,bcbsma,yes,2
+Does code 73721 require prior auth for bcbsma?,bcbsma,yes,2
+elective knee MRI 73721 documentation and prior auth,bcbsma,yes,2
+73721 required or not?,bcbsma,yes,2
+prior authorization status for 73721,bcbsma,yes,2
+Is 73721 on the imaging code table?,bcbsma,yes,2
+knee MRI CPT 73721 prior auth,bcbsma,yes,2
+does outpatient 73721 need prior authorization before scheduling?,bcbsma,yes,2
+does 70553 need prior authorization?,bcbsma,yes,2
+brain MRI with contrast 70553 prior auth?,bcbsma,yes,2
+70553 required?,bcbsma,yes,2
+is prior auth required for 70553?,bcbsma,yes,2
+code 70553 prior authorization decision,bcbsma,yes,2
+does 99213 need prior authorization?,bcbsma,no,2
+office visit 99213 prior auth?,bcbsma,no,2
+is 99213 not_required?,bcbsma,no,2
+99213 prior authorization,bcbsma,no,2
+does an office visit 99213 require prior auth?,bcbsma,no,2
+does 27447 need prior authorization?,bcbsma,unknown,
+does 80053 need prior authorization?,bcbsma,unknown,
+what about code 93000?,bcbsma,unknown,
+does 45378 need prior authorization?,bcbsma,unknown,
+prior auth for 71046?,bcbsma,unknown,
+is 77067 prior auth required?,bcbsma,unknown,
+does 93306 need prior authorization?,bcbsma,unknown,
+code 43239 prior authorization?,bcbsma,unknown,
+does 29881 need prior auth?,bcbsma,unknown,
+is 76830 prior authorization required?,bcbsma,unknown,
