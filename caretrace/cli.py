@@ -213,7 +213,7 @@ def audit_run(path: Path, payer_id: str = "bcbsma") -> None:
     for line in lines:
         if not line.code or line.code in rates:
             continue
-        quotes = get_rates(line.code, payer_id)
+        quotes = get_rates(line.code, payer_id, commercial_only=True, published_only=True)
         if quotes:
             rates[line.code] = quotes[0].value
     report = run_audit(lines, AuditContext(rates_by_code=rates, directory_confidence=0.86))
@@ -229,7 +229,7 @@ def audit_appeal(path: Path, payer_id: str = "bcbsma") -> None:
     rates: dict[str, RateQuote] = {}
     for line in lines:
         if line.code:
-            quotes = get_rates(line.code, payer_id)
+            quotes = get_rates(line.code, payer_id, commercial_only=True, published_only=True)
             if quotes:
                 rates[line.code] = quotes[0].value
     report = run_audit(lines, AuditContext(rates_by_code=rates))

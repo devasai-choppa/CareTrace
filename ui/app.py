@@ -13,6 +13,7 @@ import streamlit as st
 API = os.environ.get("CARETRACE_API_URL", "http://localhost:8000")
 ACCENT = "#0F766E"
 DISCLAIMER = "Estimates are not quotes. Appeal letters are drafts. Not legal or medical advice."
+PHI_NOTICE = "Upload synthetic EOBs only. Real patient bills are not allowed in demo mode."
 
 st.set_page_config(page_title="CareTrace", layout="wide")
 st.markdown(
@@ -20,21 +21,11 @@ st.markdown(
     <style>
     .stApp {{ background: #F7F5F2; }}
     .ct-banner {{ background: {ACCENT}; color: white; padding: 0.6rem 1rem; border-radius: 8px; }}
+    .ct-warn {{ background: #7C2D12; color: white; padding: 0.55rem 1rem; border-radius: 8px; margin-top: 0.5rem; }}
     .ct-card {{ background: white; border-radius: 12px; padding: 1rem 1.1rem; border: 1px solid #E7E2DA; }}
     </style>
     """,
     unsafe_allow_html=True,
-)
-st.markdown(
-    '<div class="ct-banner">Demo mode. Synthetic records only. No real patient data.</div>',
-    unsafe_allow_html=True,
-)
-st.title("CareTrace")
-st.caption(DISCLAIMER)
-
-page = st.sidebar.radio(
-    "Go to",
-    ["Estimate", "Audit my bill", "Ask CareTrace", "Market view", "Data & trust"],
 )
 
 
@@ -57,8 +48,44 @@ def api_post(path: str, payload: dict[str, Any] | None = None, files: Any = None
     return body if isinstance(body, dict) else {"data": body}
 
 
+def _data_mode_label() -> str:
+    try:
+        health = api_get("/v1/health")
+        mode = str(health.get("data_mode") or "unknown")
+    except httpx.HTTPError:
+        return "API offline"
+    labels = {
+        "live": "Live hospital files",
+        "sample": "Sample files (offline demo)",
+        "mixed": "Mixed sample + live",
+        "empty": "No rates loaded",
+    }
+    return labels.get(mode, mode)
+
+
+st.markdown(
+    '<div class="ct-banner">Demo mode. Synthetic records only. No real patient data.</div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    f'<div class="ct-warn">{PHI_NOTICE} {DISCLAIMER}</div>',
+    unsafe_allow_html=True,
+)
+st.title("CareTrace")
+st.caption(f"Data source: {_data_mode_label()}. {DISCLAIMER}")
+
+page = st.sidebar.radio(
+    "Go to",
+    ["Estimate", "Audit my bill", "Ask CareTrace", "Market view", "Data & trust"],
+)
+
 if page == "Estimate":
     st.subheader("What will it cost, and is it covered?")
+    st.info(
+        "Published hospital dollars are not member quotes. Deductible, network, and "
+        "site of care can change what a patient pays. Medicare-looking plans are hidden "
+        "so commercial estimates stay comparable."
+    )
     left, right = st.columns([1, 2])
     with left:
         service = st.text_input("Service", "knee MRI")
@@ -69,10 +96,27 @@ if page == "Estimate":
         coinsurance = st.number_input("Coinsurance (fraction)", value=0.2)
         copay = st.number_input("Copay", value=50.0)
         code = st.text_input("Code", "73721")
+        commercial_only = st.checkbox("Commercial plans only", value=True)
     with right:
         try:
-            prices = api_get("/v1/prices", code=code, payer_id=payer, city="Boston")
-            quotes = prices.get("quotes", [])
+            prices = api_get(
+                "/v1/prices",
+                code=code,
+                payer_id=payer,
+                city="Boston",
+                plan=plan,
+                commercial_only=commercial_only,
+            )
+            quotes = [
+                item
+                for item in prices.get("quotes", [])
+                if not item.get("value", {}).get("imputed")
+            ]
+            if not quotes:
+                st.warning(
+                    "No published commercial dollars matched this payer/plan filter. "
+                    "CareTrace abstains rather than guessing."
+                )
             cards = st.columns(min(3, max(1, len(quotes))) or 1)
             rows = []
             for index, item in enumerate(quotes):
@@ -82,6 +126,7 @@ if page == "Estimate":
                         "hospital": value["hospital_name"],
                         "negotiated": value["rate_dollar"],
                         "cash": value["discounted_cash"],
+                        "plan": value.get("plan_name"),
                     }
                 )
                 with cards[index % len(cards)]:
@@ -96,6 +141,8 @@ if page == "Estimate":
                         if value["discounted_cash"]
                         else "Cash n/a"
                     )
+                    if value.get("plan_name"):
+                        st.caption(f"Plan {value['plan_name']}")
                     with st.expander("View source"):
                         lineage = item["lineage"][0]
                         st.write(lineage["source_file_uri"])
@@ -110,7 +157,7 @@ if page == "Estimate":
                         x="hospital",
                         y="negotiated",
                         color_discrete_sequence=[ACCENT],
-                        title="Negotiated rate spread",
+                        title="Negotiated rate spread (published dollars only)",
                     ),
                     use_container_width=True,
                 )
@@ -125,15 +172,25 @@ if page == "Estimate":
                 {"payer_id": payer, "question": f"does {code} {service} need prior authorization?"},
             )
             st.markdown("**Prior authorization**")
-            st.write(prior.get("prior_auth", prior))
+            prior_payload = prior.get("prior_auth", prior)
+            st.write(prior_payload)
+            if isinstance(prior_payload, dict) and prior_payload.get("decision") == "unknown":
+                st.caption("Unknown is intentional when the policy never names the code.")
             st.caption(
-                f"Plan {plan}, ZIP {zip_code}, deductible {deductible}, coinsurance {coinsurance}, copay {copay}."
+                f"Plan {plan}, ZIP {zip_code}, deductible {deductible}, "
+                f"coinsurance {coinsurance}, copay {copay}."
             )
+            st.caption(prices.get("disclaimer", DISCLAIMER))
         except httpx.HTTPError as exc:
             st.error(f"Start the API with `make api` ({exc}).")
 
 elif page == "Audit my bill":
     st.subheader("Was I billed correctly?")
+    st.warning(PHI_NOTICE)
+    st.info(
+        "Savings use the lowest commercial published dollar for the code and payer. "
+        "That is a review signal, not a guaranteed refund."
+    )
     upload = st.file_uploader("Synthetic EOB", type=["txt", "pdf", "csv", "json"])
     if upload is not None:
         try:
@@ -142,10 +199,13 @@ elif page == "Audit my bill":
             st.dataframe(lines, use_container_width=True)
             findings = report["findings"]
             st.metric("Potential savings", f"${report['potential_savings']:.2f}")
+            if report.get("comparison_note"):
+                st.caption(report["comparison_note"])
             for finding in findings:
                 st.markdown(
                     f"**{finding['rule_id']}** ${finding['impact']:.2f} — {finding['explanation']}"
                 )
+            st.caption(report.get("disclaimer", DISCLAIMER))
             if st.button("Draft appeal"):
                 letter = api_post(
                     "/v1/appeal",
@@ -156,6 +216,7 @@ elif page == "Audit my bill":
                     },
                 )
                 st.markdown(letter["markdown"])
+                st.caption(letter.get("disclaimer", DISCLAIMER))
                 pdf = httpx.get(f"{API}{letter['pdf_url']}", timeout=60)
                 pdf.raise_for_status()
                 st.download_button(
@@ -169,6 +230,7 @@ elif page == "Audit my bill":
 
 elif page == "Ask CareTrace":
     st.subheader("Ask a question")
+    st.caption("Numbers in the answer must come from tool results. Uncited dollars are removed.")
     prompt = st.text_input("Question", "knee MRI with payer X near 02115")
     if st.button("Ask") or prompt:
         try:
@@ -179,6 +241,7 @@ elif page == "Ask CareTrace":
                     f"[{index}] {citation.get('source_file_uri')} {citation.get('source_row_hash')}"
                 )
             st.caption(f"Confidence {answer['confidence']:.2f}")
+            st.caption(answer.get("disclaimer", DISCLAIMER))
         except httpx.HTTPError as exc:
             st.error(f"Start the API with `make api` ({exc}).")
 
@@ -198,7 +261,14 @@ elif page == "Market view":
                 use_container_width=True,
             )
             st.dataframe(frame, use_container_width=True)
-        prices = api_get("/v1/prices", code="73721", payer_id="bcbsma", city="Boston")
+        prices = api_get(
+            "/v1/prices",
+            code="73721",
+            payer_id="bcbsma",
+            city="Boston",
+            plan="HMO",
+            commercial_only=True,
+        )
         spread = pd.DataFrame([item["value"] for item in prices.get("quotes", [])])
         if not spread.empty:
             st.plotly_chart(px.box(spread, y="rate_dollar", points="all"), use_container_width=True)
@@ -210,12 +280,15 @@ else:
     st.markdown(
         """
         Every rate on the Estimate page carries a source file, an ingest time, and a row hash.
-        Confidence is the quality score of that published row. Percent-only and algorithm-only
-        rows are not shown as a hospital's dollar price.
+        Confidence is the quality score of that published row. Percent-only, algorithm-only,
+        and imputed intervals are never shown as the hospital's published dollar.
 
-        CPT codes are stored without AMA descriptor text. The plain labels in the shoppable
-        list were written for this demo. Sample patients come from a synthetic FHIR bundle,
-        not from a real record.
+        Commercial-only filtering drops Medicare/Medicaid-looking plan strings so audits do
+        not compare a commercial EOB to the wrong product. If no row matches, CareTrace
+        abstains.
+
+        CPT codes are stored without AMA descriptor text. Sample patients come from a
+        synthetic FHIR bundle. See `docs/LIMITATIONS.md` for the hard product risks.
         """
     )
     try:

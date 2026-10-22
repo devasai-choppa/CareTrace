@@ -138,6 +138,53 @@ def test_estimate_table() -> None:
     assert capped.value.assumptions
 
 
+def test_commercial_and_plan_filters(settings) -> None:
+    from caretrace.ingest.download import file_id_for
+    from caretrace.ingest.manifest import record_download
+    from caretrace.parse.payer_resolve import resolve_all
+    from caretrace.parse.runner import parse_file
+    from caretrace.pipeline import _clear_charge_bronze
+    from caretrace.warehouse import get_rates, is_commercial_plan, plan_matches, rebuild_marts
+
+    assert is_commercial_plan("HB AMC BLUE CROSS HMO", "BLUE CROSS BLUE SHIELD [110001]")
+    assert not is_commercial_plan("BMC HB MEDICARE - NO IME", "BCBS MEDICARE MANAGED [1204]")
+    assert plan_matches("HB XR BCBSMA HMO TMC", "HMO Blue")
+    assert not plan_matches("HB XR BCBSMA PPO PPA TMC", "HMO Blue")
+
+    uri = "https://example.invalid/bmc_standardcharges.csv"
+    file_id = file_id_for("bmc", uri)
+    raw_dir = settings.raw_dir / "bmc"
+    raw_dir.mkdir(parents=True)
+    path = raw_dir / f"{file_id}_charges.csv"
+    path.write_text(
+        "hospital_name,last_updated_on,version\n"
+        "Boston Medical Center,03/13/2026,3.0.0\n"
+        "description,code|1,code|1|type,setting,payer_name,plan_name,"
+        "standard_charge|negotiated_dollar\n"
+        "Knee MRI,73721,CPT,both,BCBS [6001],BMC HB BLUE CROSS,574.25\n"
+        "Knee MRI,73721,CPT,both,BCBS [6001],BMC HB MEDICARE - NO IME,277.18\n",
+        encoding="utf-8",
+    )
+    record_download(file_id, "bmc", uri, "abc", path.stat().st_size, settings=settings)
+    _clear_charge_bronze(settings)
+    parse_file(
+        path,
+        source_id="bmc",
+        file_id=file_id,
+        source_file_uri=uri,
+        hospital_name="Boston Medical Center",
+        settings=settings,
+        code_allowlist={"73721"},
+    )
+    resolve_all(settings)
+    rebuild_marts(settings, codes={"73721"})
+    commercial = get_rates("73721", "bcbsma", commercial_only=True, settings=settings)
+    assert len(commercial) == 1
+    assert commercial[0].value.rate_dollar == 574.25
+    all_plans = get_rates("73721", "bcbsma", commercial_only=False, settings=settings)
+    assert len(all_plans) == 2
+
+
 def test_live_bronze_feeds_marts(settings) -> None:
     """A downloaded-shaped live CSV rebuilds gold with a published BCBS dollar."""
     from caretrace.ingest.download import file_id_for

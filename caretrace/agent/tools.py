@@ -30,8 +30,8 @@ def tool_lookup_codes(text: str) -> dict[str, Any]:
 
 
 def tool_get_prices(code: str, payer_id: str, zip_code: str | None) -> dict[str, Any]:
-    """Cited negotiated rates."""
-    quotes = get_rates(code, payer_id, zip_code=zip_code)
+    """Cited negotiated commercial rates (Medicare-looking plans excluded)."""
+    quotes = get_rates(code, payer_id, zip_code=zip_code, commercial_only=True, published_only=True)
     payload = []
     for index, cited in enumerate(quotes, start=1):
         quote = cited.value

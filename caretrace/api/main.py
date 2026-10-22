@@ -20,11 +20,12 @@ from caretrace.directory.payer_directory import MockDirectory
 from caretrace.directory.trust import score_entry
 from caretrace.models.domain import Finding
 from caretrace.phi import PhiRejectedError, assert_no_phi
-from caretrace.warehouse import compliance_table, get_rates
+from caretrace.warehouse import compliance_table, data_mode, get_rates
 
 DISCLAIMER = (
     "Estimates are not quotes. Appeal letters are drafts. This is not legal or medical advice."
 )
+PHI_NOTICE = "Demo mode rejects real patient data. Upload only synthetic EOBs from data/samples/."
 
 
 class ChatRequest(BaseModel):
@@ -82,7 +83,12 @@ def create_app() -> FastAPI:
 
     @app.get("/v1/health", tags=["meta"])
     def health() -> dict[str, str]:
-        return {"status": "ok", "warehouse": settings.warehouse}
+        return {
+            "status": "ok",
+            "warehouse": settings.warehouse,
+            "data_mode": data_mode(settings),
+            "demo_mode": "true" if settings.demo_mode else "false",
+        }
 
     @app.get("/v1/sources", tags=["meta"])
     def sources() -> dict[str, Any]:
@@ -90,7 +96,12 @@ def create_app() -> FastAPI:
             rows = compliance_table(settings)
         except Exception:
             rows = []
-        return {"hospitals": rows, "disclaimer": DISCLAIMER}
+        return {
+            "hospitals": rows,
+            "disclaimer": DISCLAIMER,
+            "data_mode": data_mode(settings),
+            "phi_notice": PHI_NOTICE,
+        }
 
     @app.post("/v1/chat", tags=["agent"], response_model=ChatResponse)
     def chat(payload: ChatRequest) -> ChatResponse:
@@ -107,8 +118,22 @@ def create_app() -> FastAPI:
         )
 
     @app.get("/v1/prices", tags=["prices"])
-    def prices(code: str, payer_id: str, city: str | None = None) -> dict[str, Any]:
-        quotes = get_rates(code, payer_id, city=city, settings=settings)
+    def prices(
+        code: str,
+        payer_id: str,
+        city: str | None = None,
+        plan: str | None = None,
+        commercial_only: bool = True,
+    ) -> dict[str, Any]:
+        quotes = get_rates(
+            code,
+            payer_id,
+            city=city,
+            plan=plan,
+            commercial_only=commercial_only,
+            published_only=True,
+            settings=settings,
+        )
         return {
             "quotes": [
                 {
@@ -120,6 +145,12 @@ def create_app() -> FastAPI:
                 for item in quotes
             ],
             "disclaimer": DISCLAIMER,
+            "filters": {
+                "plan": plan,
+                "commercial_only": commercial_only,
+                "published_only": True,
+            },
+            "data_mode": data_mode(settings),
         }
 
     @app.get("/v1/providers/{npi}/trust", tags=["directory"])
@@ -156,6 +187,11 @@ def create_app() -> FastAPI:
             "findings": [finding.model_dump() for finding in report["findings"]],
             "potential_savings": report["potential_savings"],
             "disclaimer": DISCLAIMER,
+            "phi_notice": PHI_NOTICE,
+            "comparison_note": (
+                "Savings compare the allowed amount to the lowest commercial published "
+                "dollar for the code and payer. Medicare-looking plans are excluded."
+            ),
         }
 
     @app.post("/v1/appeal", tags=["audit"])
@@ -171,6 +207,7 @@ def create_app() -> FastAPI:
             "markdown": letter,
             "pdf_url": f"/v1/appeal/{claim_id}.pdf",
             "disclaimer": DISCLAIMER,
+            "phi_notice": PHI_NOTICE,
         }
 
     @app.get("/v1/appeal/{claim_id}.pdf", tags=["audit"])
@@ -185,7 +222,7 @@ def create_app() -> FastAPI:
 
 
 def _audit_context(lines: list[Any], payer_id: str = "bcbsma") -> AuditContext:
-    """Attach published rates and a directory score so the rules can cite them."""
+    """Attach published commercial rates and a directory score for the rules."""
     from caretrace.models.domain import EobLine
     from caretrace.warehouse import get_rates
 
@@ -197,7 +234,12 @@ def _audit_context(lines: list[Any], payer_id: str = "bcbsma") -> AuditContext:
         if not line.code or line.code in rates:
             continue
         try:
-            quotes = get_rates(line.code, payer_id)
+            quotes = get_rates(
+                line.code,
+                payer_id,
+                commercial_only=True,
+                published_only=True,
+            )
         except duckdb.CatalogException:
             break
         if quotes:

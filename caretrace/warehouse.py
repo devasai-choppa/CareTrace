@@ -330,16 +330,81 @@ def negotiated_resolution_rate(settings: Settings | None = None) -> float:
         conn.close()
 
 
+_NON_COMMERCIAL = (
+    "MEDICARE",
+    "MEDICAID",
+    "WORKERS COMP",
+    "WORKER'S COMP",
+    "WORKERS' COMP",
+    "TRICARE",
+    "MANAGED MEDICAID",
+)
+
+
+def is_commercial_plan(plan_name: str | None, payer_name_raw: str | None = None) -> bool:
+    """False when the plan or payer string looks Medicare/Medicaid/workers-comp."""
+    text = f"{plan_name or ''} {payer_name_raw or ''}".upper()
+    return not any(token in text for token in _NON_COMMERCIAL)
+
+
+def plan_matches(plan_name: str | None, plan_query: str | None) -> bool:
+    """Soft match on HMO/PPO/POS/EPO tokens, else on significant words."""
+    if not plan_query or not str(plan_query).strip():
+        return True
+    if not plan_name:
+        return False
+    query = str(plan_query).upper()
+    name = plan_name.upper()
+    product_tokens = [token for token in ("HMO", "PPO", "POS", "EPO") if token in query]
+    if product_tokens:
+        return any(token in name for token in product_tokens)
+    parts = [part for part in query.replace("/", " ").split() if len(part) >= 3]
+    return any(part in name for part in parts) if parts else True
+
+
+def data_mode(settings: Settings | None = None) -> str:
+    """Return sample, live, mixed, or empty for the current gold mart."""
+    cfg = settings or get_settings()
+    conn = connect(cfg)
+    try:
+        try:
+            rows = conn.execute(
+                "SELECT DISTINCT file_id FROM gold.mart_negotiated_rates"
+            ).fetchall()
+        except duckdb.CatalogException:
+            return "empty"
+    finally:
+        conn.close()
+    if not rows:
+        return "empty"
+    ids = [str(row[0] or "") for row in rows]
+    samples = sum(1 for item in ids if item.startswith("sample-"))
+    if samples == len(ids):
+        return "sample"
+    if samples == 0:
+        return "live"
+    return "mixed"
+
+
 def get_rates(
     code: str,
     payer_id: str | None = None,
     *,
     zip_code: str | None = None,
     city: str | None = None,
+    plan: str | None = None,
+    commercial_only: bool = False,
+    published_only: bool = True,
     settings: Settings | None = None,
     registry: SourceRegistry | None = None,
 ) -> list[Cited[RateQuote]]:
-    """Return cited negotiated rates for a code, optionally filtered by payer and place."""
+    """Return cited negotiated rates for a code, optionally filtered by payer and place.
+
+    ``commercial_only`` drops Medicare/Medicaid-looking plans so an audit does not
+    compare a commercial EOB to a Medicare managed rate. ``plan`` soft-matches
+    HMO/PPO tokens. When those filters remove every row, the unfiltered payer
+    result is *not* restored — empty means abstain.
+    """
     cfg = settings or get_settings()
     reg = registry or load_registry()
     place = city or city_for_zip(zip_code)
@@ -362,6 +427,14 @@ def get_rates(
         source_id = str(record["source_id"])
         if allowed is not None and source_id not in allowed:
             continue
+        plan_name = None if record.get("plan_name") is None else str(record["plan_name"])
+        payer_raw = None if record.get("payer_name_raw") is None else str(record["payer_name_raw"])
+        if commercial_only and not is_commercial_plan(plan_name, payer_raw):
+            continue
+        if not plan_matches(plan_name, plan):
+            continue
+        if published_only and bool(record.get("imputed")):
+            continue
         has_dollar = _is_number(record.get("rate_dollar"))
         percent_only = record.get("rate_kind") == "percent"
         algorithm_only = record.get("rate_kind") == "algorithm"
@@ -381,7 +454,7 @@ def get_rates(
             ingested_at=ingested,
             parser_version=str(record.get("parser_version") or PARSER_VERSION),
             method="published_mrf",
-            parameters={"rate_kind": record.get("rate_kind")},
+            parameters={"rate_kind": record.get("rate_kind"), "plan_filter": plan or ""},
         )
         quote = RateQuote(
             hospital_name=str(record.get("hospital_name") or source_id),
@@ -390,10 +463,8 @@ def get_rates(
             code_type=str(record.get("code_type") or "OTHER"),
             setting=str(record.get("setting") or "outpatient"),
             payer_id=None if record.get("payer_id") is None else str(record["payer_id"]),
-            payer_name_raw=None
-            if record.get("payer_name_raw") is None
-            else str(record["payer_name_raw"]),
-            plan_name=None if record.get("plan_name") is None else str(record["plan_name"]),
+            payer_name_raw=payer_raw,
+            plan_name=plan_name,
             rate_dollar=float(record["rate_dollar"]) if has_dollar else None,
             rate_kind=str(record.get("rate_kind") or "missing"),
             discounted_cash=float(record["discounted_cash"])

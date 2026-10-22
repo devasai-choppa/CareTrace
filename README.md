@@ -269,6 +269,7 @@ scripts/       Synthea notes, code-ref fetch, BI export, ghost injection
 ## Data, limits, ethics
 
 Sources, including the verified `cms-hpt.txt` hosts, are described in `docs/DATA_SOURCES.md`.
+Product risks and mitigations (wrong plan match, PHI, overconfidence, scale) are in `docs/LIMITATIONS.md`.
 
 Limits: five sample hospitals, three payers, one imaging policy, and synthetic bills. Unbundling pairs are illustrative, not the CMS National Correct Coding Initiative table. Directory data is a mock, with an NPPES client that is unused until you call it. Conformal coverage was measured on a simulated price process.
 
